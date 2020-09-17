@@ -32,7 +32,8 @@ namespace marley {
   class Parity;
   class StructureDatabase;
 
-  /// @brief Abstract base class that represents a two-two scattering reaction
+  /// @brief Abstract base class that represents a 2 &rarr; 2 scattering
+  /// reaction
   /// @details This class models a reaction of the form a + b &rarr; c + d.
   /// The projectile (particle a) is taken to have lab-frame kinetic energy KEa
   /// and to be traveling toward the target along the positive z direction.
