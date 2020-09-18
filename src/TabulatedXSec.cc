@@ -16,7 +16,6 @@
 
 // Standard library includes
 #include <fstream>
-#include <iostream>
 
 // MARLEY includes
 #include "marley/MassTable.hh"
@@ -50,19 +49,15 @@ void marley::TabulatedXSec::add_table( const std::string& file_name )
   auto qvec = std::make_shared< std::vector<double> >();
 
   in_file >> num_w;
-  std::cout << "NUMW = " << num_w << '\n';
   for ( unsigned iw = 0u; iw < num_w; ++iw ) {
     in_file >> w;
     wvec->push_back( w );
-    std::cout << "  w = " << w << '\n';
   }
 
   in_file >> num_q;
-  std::cout << "NUMQ = " << num_q << '\n';
   for ( unsigned iq = 0u; iq < num_q; ++iq ) {
     in_file >> q;
     qvec->push_back( q );
-    std::cout << "  q = " << q << '\n';
   }
 
   // Natural parity is given by (-1)^J, while unnatural parity is the opposite
@@ -153,4 +148,99 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   double xsec = lf * nr;
   xsec *= 2. * marley_utils::GF2 * marley_utils::Vud2 * Ec * pc;
   return xsec;
+}
+
+double marley::TabulatedXSec::integral( int pdg_a, double KEa,
+  const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max )
+{
+  // Set the maximum differential cross section to minus infinity
+  // to start
+  diff_max = marley_utils::minus_infinity;
+
+  // Get the table of nuclear responses for the requested multipole
+  const auto& rt = this->responses_.at( ml );
+
+  // Get the vectors of grid points
+  const auto& wvec = rt.w_grid();
+  const auto& qvec = rt.q_grid();
+
+  // TODO: reduce code duplication with this and diff_xsec
+  // Look up the masses of the projectile and ejectile
+  int pdg_c = marley::Reaction::get_ejectile_pdg( pdg_a, proc_type_ );
+  const auto& mt = marley::MassTable::Instance();
+  double ma = mt.get_particle_mass( pdg_a );
+  double mc = mt.get_particle_mass( pdg_c );
+
+  // Projectile total energy
+  double Ea = KEa + ma;
+
+  // Get the grid step sizes
+  // NOTE: this assumes that the grid is regularly spaced (I take advantage
+  // of this to simplify the trapezoidal rule for integration)
+  // TODO: revisit this assumption
+  size_t num_w = wvec.size();
+  size_t num_q = qvec.size();
+
+  size_t num_w_minus_one = num_w - 1;
+  size_t num_q_minus_one = num_q - 1;
+
+  double dw = ( wvec.back() - wvec.front() ) / num_w_minus_one;
+  double dq = ( qvec.back() - qvec.front() ) / num_q_minus_one;
+
+  // Loop over every grid point. Do an angular integral at every omega
+  // point, and use the results to integrate over omega.
+  double integ = 0.;
+  for ( size_t iw = 0u; iw < num_w; ++iw ) {
+
+    // Get the energy transfer at the current grid point
+    double w = wvec.at( iw );
+
+    // Use it to compute the ejectile total energy, etc.
+    double Ec = Ea - w;
+    // We can skip unphysical terms for which the total energy is smaller than
+    // the final lepton mass
+    if ( Ec < mc ) continue;
+    double pc = marley_utils::real_sqrt( Ec*Ec - mc*mc );
+    double pa = marley_utils::real_sqrt( Ea*Ea - ma*ma );
+
+    double w_integ = 0.;
+    for ( size_t iq = 0u; iq < num_q; ++iq ) {
+
+      // Get the magnitude of the 3-momentum transfer at the current grid point
+      double q = qvec.at( iq );
+
+      // Convert it into a value for the scattering cosine
+      double cos_theta = ( pa*pa + pc*pc - q*q ) / ( 2.*pa*pc );
+
+      // Compute the differential cross section at this 2D grid point
+      double diff = this->diff_xsec( pdg_a, KEa, w, cos_theta, ml );
+
+      // If it is larger than any value encountered so far, record it as
+      // the new maximum
+      if ( diff > diff_max ) diff_max = diff;
+
+      // Apply a Jacobian to transform from dwdcostheta to dwdq (since we're
+      // integrating on a grid of q values)
+      diff *= q / pa / pc;
+
+      // Add this term to the integral over omega according to the trapezoid
+      // rule
+      if ( iq == 0u || iq == num_q_minus_one ) diff /= 2.;
+      w_integ += diff;
+    }
+
+    // We're done summing over q values. Scale the result to get the
+    // integral over q for this w grid point.
+    w_integ *= dq;
+
+    // Now add this term to the integral over w according to the trapezoid rule
+    if ( iw == 0u || iw == num_w_minus_one ) w_integ /= 2.;
+
+    integ += w_integ;
+  }
+
+  // We're done. Scale the integral over w by the needed prefactor
+  integ *= dw;
+
+  return integ;
 }

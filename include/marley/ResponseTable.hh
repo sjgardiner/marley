@@ -90,6 +90,11 @@ namespace marley {
             return !operator==( other );
           }
 
+          inline void print(std::ostream& out) const {
+            out << rCC_ << ' ' << rLL_ << ' ' << rCL_ << ' '
+              << rT_ << ' ' << rTprime_;
+          }
+
       protected:
 
         NuclearResponses apply_to_members( double d,
@@ -151,6 +156,16 @@ namespace marley {
       /// Retrieve the maximum q value
       inline double q_max() const { return qvec_->back(); }
 
+      /// Access the energy transfer grid points
+      inline const std::vector<double>& w_grid() const { return *wvec_; }
+
+      /// Access the 3-momentum transfer grid points
+      inline const std::vector<double>& q_grid() const { return *qvec_; }
+
+      /// Access the nuclear responses
+      inline const std::vector<NuclearResponses>& get_responses() const
+        { return *responses_; }
+
       /// Calculates the index in the vector of responses that
       /// corresponds to a given set of &omega; and q indices
       /// \param[in] iw Index of the desired grid point on the &omega; axis
@@ -193,4 +208,24 @@ namespace marley {
         double val, size_t& lower_index, size_t& upper_index ) const;
   };
 
+}
+
+inline std::ostream& operator<<(std::ostream& out,
+  const marley::ResponseTable::NuclearResponses& np)
+{
+  np.print( out );
+  return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out,
+  const marley::ResponseTable& rt)
+{
+  for ( size_t iw = 0u; iw < rt.w_grid().size(); ++iw ) {
+    for ( size_t iq = 0u; iq < rt.q_grid().size(); ++iq ) {
+      out << rt.w_grid().at( iw ) << "  " << rt.q_grid().at( iq ) << "  ";
+      size_t ir = rt.response_index( iw, iq );
+      out << rt.get_responses().at( ir ) << '\n';
+    }
+  }
+  return out;
 }

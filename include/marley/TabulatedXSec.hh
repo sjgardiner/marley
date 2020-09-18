@@ -105,6 +105,9 @@ namespace marley {
       inline const ResponseTable& get_table( const MultipoleLabel& ml ) const
         { return responses_.at( ml ); }
 
+      double integral( int pdg_a, double KEa, const MultipoleLabel& ml,
+        double& diff_max );
+
     protected:
 
       /// Nuclide represented by this table of nuclear responses

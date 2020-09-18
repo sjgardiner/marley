@@ -1,0 +1,13 @@
+# MARLEY reaction input file for neutrino CC on 16O
+# Revised 18 September 2020 by Steven Gardiner
+#
+# Particle IDs conform to the 2017 revision of the
+# Particle Data Group Monte Carlo Particle Numbering Scheme
+# (see http://pdg.lbl.gov/2018/reviews/rpp2018-rev-monte-carlo-numbering.pdf)
+#
+# ProcessType code and nuclear target PDG code
+0 1000080160 1
+# List of nuclear response tables
+/Users/gardiner/marley/crpa/R_CRPA_O16/test0.txt
+/Users/gardiner/marley/crpa/R_CRPA_O16/test1.txt
+/Users/gardiner/marley/crpa/R_CRPA_O16/test4.txt
