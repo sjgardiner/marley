@@ -534,6 +534,9 @@ std::vector< std::unique_ptr<marley::Reaction> >
     for ( const int& pdg_a : get_projectiles(proc_type) ) {
       int pdg_c = get_ejectile_pdg(pdg_a, proc_type);
 
+      // TODO: remove hard-coding here
+      txsec->optimize( pdg_a, 100. );
+
       loaded_reactions.emplace_back(
         std::make_unique<marley::TabulatedReaction>( proc_type, pdg_a, pdg_b,
           pdg_c, pdg_d, q_d, txsec) );

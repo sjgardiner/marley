@@ -76,6 +76,9 @@ namespace marley {
 
       ChebyshevInterpolatingFunction cdf() const;
 
+      inline double x_min() const { return x_min_; }
+      inline double x_max() const { return x_max_; }
+
     protected:
 
       /// @brief Default constructor used by cdf()

@@ -160,7 +160,7 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   return xsec;
 }
 
-double marley::TabulatedXSec::integral( int pdg_a, double KEa,
+double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
   const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max )
 {
   // Set the maximum differential cross section to minus infinity
@@ -255,6 +255,35 @@ double marley::TabulatedXSec::integral( int pdg_a, double KEa,
   return integ;
 }
 
+double marley::TabulatedXSec::integral( int pdg_a, double KEa,
+  const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max )
+{
+  // First attempt to look up a pair of ChebyshevInterpolatingFunction
+  // objects for the given projectile PDG code and multipole
+  OptimizationMapKey key( pdg_a, ml );
+  auto end = optimization_map_.end();
+  auto iter = optimization_map_.find( key );
+  // If we found one, attempt to compute the cross sections using them
+  if ( iter != end ) {
+    const auto& omv = iter->second;
+    const auto& tot = omv.tot_xsec_;
+    // If the requested kinetic energy is below threshold, then just
+    // return zero
+    if ( KEa < tot.x_min() ) return 0.;
+    // If the kinetic energy is within the range covered by the
+    // interpolating functions, then go ahead and use them
+    else if ( KEa <= tot.x_max() ) {
+      double tot_xsec = omv.tot_xsec_.evaluate( KEa );
+      diff_max = omv.max_diff_xsec_.evaluate( KEa );
+      return tot_xsec;
+    }
+  }
+
+  // If we couldn't find a suitable interpolating function, then fall back to
+  // brute-force integration
+  return this->compute_integral( pdg_a, KEa, ml, diff_max );
+}
+
 double marley::TabulatedXSec::integral( int pdg_a, double KEa )
 {
   double integ = 0.;
@@ -265,4 +294,69 @@ double marley::TabulatedXSec::integral( int pdg_a, double KEa )
     integ += integ_ml;
   }
   return integ;
+}
+
+void marley::TabulatedXSec::optimize( int pdg_a, double max_KEa ) {
+  // Loop over each of the multipoles
+  for ( const auto& pair : responses_ ) {
+    const auto& ml = pair.first;
+
+    // Verify that the total cross section for this multipole is non-vanishing
+    // for the requested maximum projectile kinetic energy KEa. If it vanishes,
+    // then just skip the current multipole.
+    double dummy;
+    double xsec_at_max = this->integral( pdg_a, max_KEa, ml, dummy );
+    if ( xsec_at_max <= 0. ) continue;
+
+    // Do a binary search to find the threshold for this multipole. Continue
+    // until we've found it within the given tolerance.
+    constexpr double thresh_tol = 1e-6; // MeV
+    // Set up the bounds of a bracketing interval that will contain the
+    // kinetic energy threshold
+    double low_KEa = 0.;
+    double high_KEa = max_KEa;
+    do {
+      // Check the total cross section at the midpoint of the current
+      // bracketing interval
+      double cur_KEa = (low_KEa + high_KEa) / 2.;
+      double xsec = this->integral( pdg_a, cur_KEa, ml, dummy );
+      // If it vanishes, move the lower bound up
+      if ( xsec <= 0. ) low_KEa = cur_KEa;
+      // If it doesn't, move the upper bound down
+      else high_KEa = cur_KEa;
+      // Continue until the bracketing interval is no larger than the tolerance
+      // defined above
+    } while ( std::abs(high_KEa - low_KEa) > thresh_tol );
+
+    // Adopt the lower bound of the bracketing interval as the threshold
+    double min_KEa = low_KEa;
+
+    MARLEY_LOG_DEBUG() << "Optimizing total cross section for "
+      << ml.J_ << ml.Pi_;
+
+    // Now we're ready to build the Chebyshev interpolating functions for
+    // this multipole. We need one for the total cross section and the
+    // other one for the maximum of the differential cross section.
+    ChebyshevInterpolatingFunction tot_xs_cif( [&, this](double KEa)
+      -> double { return this->integral( pdg_a, KEa, ml, dummy ); },
+      min_KEa, max_KEa, 64 );
+    // TODO: do you want adaptive grid sizing here?
+
+    MARLEY_LOG_DEBUG() << "Optimizing max diff for "
+      << ml.J_ << ml.Pi_;
+
+    ChebyshevInterpolatingFunction max_diff_xs_cif( [&, this](double KEa)
+      -> double {
+        double max_diff;
+        this->integral( pdg_a, KEa, ml, max_diff );
+        return max_diff;
+      },
+      min_KEa, max_KEa, 64 );
+
+    // Build the key and value we need for the map entry
+    OptimizationMapKey key( pdg_a, ml );
+    OptimizationMapValue value( tot_xs_cif, max_diff_xs_cif );
+
+    optimization_map_.emplace( std::make_pair(key, value) );
+  }
 }

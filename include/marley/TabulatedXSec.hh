@@ -20,6 +20,7 @@
 #include <map>
 
 // MARLEY includes
+#include "marley/ChebyshevInterpolatingFunction.hh"
 #include "marley/Parity.hh"
 #include "marley/Reaction.hh"
 #include "marley/ResponseTable.hh"
@@ -113,7 +114,39 @@ namespace marley {
 
       double integral( int pdg_a, double KEa );
 
+      void optimize( int pdg_a, double max_KEa );
+
     protected:
+
+      // Helper function for integral that does the actual integration
+      double compute_integral( int pdg_a, double KEa, const MultipoleLabel& ml,
+        double& diff_max );
+
+      struct OptimizationMapKey {
+        OptimizationMapKey( int pdg_a, MultipoleLabel ml )
+          : pdg_a_( pdg_a ), ml_( ml ) {}
+
+        /// Define the order of OptimizationMapKey objects so that they
+        /// be used as keys for a std::map
+        inline bool operator<( const OptimizationMapKey& omk ) const {
+          if ( this->pdg_a_ != omk.pdg_a_ ) {
+            return ( this->pdg_a_ < omk.pdg_a_ );
+          }
+          return this->ml_ < omk.ml_;
+        }
+
+        int pdg_a_;
+        MultipoleLabel ml_;
+      };
+
+      struct OptimizationMapValue {
+        OptimizationMapValue( ChebyshevInterpolatingFunction tot_xsec,
+          ChebyshevInterpolatingFunction max_diff_xsec )
+          : tot_xsec_( tot_xsec ), max_diff_xsec_( max_diff_xsec ) {}
+
+        ChebyshevInterpolatingFunction tot_xsec_;
+        ChebyshevInterpolatingFunction max_diff_xsec_;
+      };
 
       /// Nuclide represented by this table of nuclear responses
       TargetAtom ta_;
@@ -123,6 +156,10 @@ namespace marley {
 
       /// Tables of nuclear responses organized by multipole
       std::map< MultipoleLabel, ResponseTable > responses_;
+
+      /// Storage for interpolating functions used to optimize calculations
+      /// requiring numerical integration
+      std::map< OptimizationMapKey, OptimizationMapValue > optimization_map_;
   };
 
 }
