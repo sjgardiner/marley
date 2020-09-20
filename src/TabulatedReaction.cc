@@ -132,7 +132,7 @@ marley::Event marley::TabulatedReaction::create_event( int pdg_a, double KEa,
   const auto& sampled_ml = multipoles.at( multipole_index );
   // Maximum value of the differential cross section for this multipole.
   // This will be used for rejection sampling of inclusive kinematics below.
-  double diff_max = diff_max_values.at( diff_max );
+  double diff_max = diff_max_values.at( multipole_index );
 
   // ResponseTable object to use for computing the differential cross section
   // during kinematic sampling below
@@ -163,6 +163,8 @@ marley::Event marley::TabulatedReaction::create_event( int pdg_a, double KEa,
     ctl = gen.uniform_random_double( -1., 1., true );
     diff = xsec_->diff_xsec( pdg_a_, KEa, w, ctl, sampled_ml );
     y = gen.uniform_random_double( 0., diff_max, true );
+    if ( y > diff_max ) MARLEY_LOG_WARNING() << "Crap! y = " << y
+      << ", diff_max = " << diff_max;
   } while ( y > diff );
 
   // Sample a lab-frame azimuthal scattering angle uniformly

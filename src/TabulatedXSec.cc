@@ -301,56 +301,65 @@ void marley::TabulatedXSec::optimize( int pdg_a, double max_KEa ) {
   for ( const auto& pair : responses_ ) {
     const auto& ml = pair.first;
 
+    double min_KEa = 0.;
+    std::function<double(double)> tot_xsec_func = [](double)
+      -> double { return 0.; };
+    std::function<double(double)> max_diff_xsec_func = tot_xsec_func;
+
     // Verify that the total cross section for this multipole is non-vanishing
     // for the requested maximum projectile kinetic energy KEa. If it vanishes,
     // then just skip the current multipole.
     double dummy;
     double xsec_at_max = this->integral( pdg_a, max_KEa, ml, dummy );
-    if ( xsec_at_max <= 0. ) continue;
 
-    // Do a binary search to find the threshold for this multipole. Continue
-    // until we've found it within the given tolerance.
-    constexpr double thresh_tol = 1e-6; // MeV
-    // Set up the bounds of a bracketing interval that will contain the
-    // kinetic energy threshold
-    double low_KEa = 0.;
-    double high_KEa = max_KEa;
-    do {
-      // Check the total cross section at the midpoint of the current
-      // bracketing interval
-      double cur_KEa = (low_KEa + high_KEa) / 2.;
-      double xsec = this->integral( pdg_a, cur_KEa, ml, dummy );
-      // If it vanishes, move the lower bound up
-      if ( xsec <= 0. ) low_KEa = cur_KEa;
-      // If it doesn't, move the upper bound down
-      else high_KEa = cur_KEa;
-      // Continue until the bracketing interval is no larger than the tolerance
-      // defined above
-    } while ( std::abs(high_KEa - low_KEa) > thresh_tol );
+    if ( xsec_at_max > 0. ) {
+      // Do a binary search to find the threshold for this multipole. Continue
+      // until we've found it within the given tolerance.
+      constexpr double thresh_tol = 1e-6; // MeV
+      // Set up the bounds of a bracketing interval that will contain the
+      // kinetic energy threshold
+      double low_KEa = 0.;
+      double high_KEa = max_KEa;
+      do {
+        // Check the total cross section at the midpoint of the current
+        // bracketing interval
+        double cur_KEa = (low_KEa + high_KEa) / 2.;
+        double xsec = this->integral( pdg_a, cur_KEa, ml, dummy );
+        // If it vanishes, move the lower bound up
+        if ( xsec <= 0. ) low_KEa = cur_KEa;
+        // If it doesn't, move the upper bound down
+        else high_KEa = cur_KEa;
+        // Continue until the bracketing interval is no larger than the tolerance
+        // defined above
+      } while ( std::abs(high_KEa - low_KEa) > thresh_tol );
 
-    // Adopt the lower bound of the bracketing interval as the threshold
-    double min_KEa = low_KEa;
+      // Adopt the lower bound of the bracketing interval as the threshold
+      min_KEa = low_KEa;
 
-    MARLEY_LOG_DEBUG() << "Optimizing total cross section for "
+      tot_xsec_func = [&, this](double KEa)
+        -> double { return this->integral( pdg_a, KEa, ml, dummy ); };
+
+      max_diff_xsec_func = [&, this](double KEa) -> double {
+        double max_diff;
+        this->integral( pdg_a, KEa, ml, max_diff );
+        return max_diff;
+      };
+    }
+
+    MARLEY_LOG_INFO() << "Optimizing total cross section for "
       << ml.J_ << ml.Pi_;
 
     // Now we're ready to build the Chebyshev interpolating functions for
     // this multipole. We need one for the total cross section and the
     // other one for the maximum of the differential cross section.
-    ChebyshevInterpolatingFunction tot_xs_cif( [&, this](double KEa)
-      -> double { return this->integral( pdg_a, KEa, ml, dummy ); },
-      min_KEa, max_KEa, 64 );
+    ChebyshevInterpolatingFunction tot_xs_cif( tot_xsec_func, min_KEa,
+      max_KEa, 64 );
     // TODO: do you want adaptive grid sizing here?
 
     MARLEY_LOG_DEBUG() << "Optimizing max diff for "
       << ml.J_ << ml.Pi_;
 
-    ChebyshevInterpolatingFunction max_diff_xs_cif( [&, this](double KEa)
-      -> double {
-        double max_diff;
-        this->integral( pdg_a, KEa, ml, max_diff );
-        return max_diff;
-      },
+    ChebyshevInterpolatingFunction max_diff_xs_cif( max_diff_xsec_func,
       min_KEa, max_KEa, 64 );
 
     // Build the key and value we need for the map entry
