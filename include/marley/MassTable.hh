@@ -15,6 +15,9 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 #pragma once
+
+// Standard library includes
+#include <string>
 #include <unordered_map>
 
 namespace marley {

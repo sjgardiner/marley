@@ -31,6 +31,10 @@ namespace marley {
 
     public:
 
+      TabulatedReaction( Reaction::ProcessType pt, int pdg_a,
+        int pdg_b, int pdg_c, int pdg_d, int q_d,
+        const std::shared_ptr<TabulatedXSec>& txsec );
+
       inline virtual TargetAtom atomic_target() const
         { return TargetAtom( pdg_b_ ); }
 
@@ -46,9 +50,18 @@ namespace marley {
 
     protected:
 
+      /// @brief Lab-frame projectile kinetic energy threshold for a transition
+      /// to the residue ground state
+      double KEa_threshold_;
+
+      /// @brief Ground-state mass of the residue
+      double md_gs_;
+
+      /// @brief Net charge of the residue
+      int q_d_;
+
       /// @brief Helper object that handles cross section calculations
       std::shared_ptr< TabulatedXSec > xsec_;
-
   };
 
 }

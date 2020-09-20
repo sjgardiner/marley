@@ -105,8 +105,13 @@ namespace marley {
       inline const ResponseTable& get_table( const MultipoleLabel& ml ) const
         { return responses_.at( ml ); }
 
+      inline const std::map< MultipoleLabel, ResponseTable >& get_table_map()
+        const { return responses_; }
+
       double integral( int pdg_a, double KEa, const MultipoleLabel& ml,
         double& diff_max );
+
+      double integral( int pdg_a, double KEa );
 
     protected:
 

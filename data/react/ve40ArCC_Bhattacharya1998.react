@@ -26,7 +26,7 @@
 # highest measured experimental level.
 #
 # ProcessType code and nuclear target PDG code
-0 1000180400
+0 1000180400 0
 # Experimental Ex, B(GT) pairs taken from
 # M. Bhattacharya, et al., Phys. Rev. C 58, 3677 (1998)
 2.289868 0.90              1

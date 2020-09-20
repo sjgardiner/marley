@@ -13,7 +13,7 @@
 # from this file for now.
 #
 # ProcessType code and nuclear target PDG code
-2 1000180400
+2 1000180400 0
 # With the factor Q_W / 2 factored out (as is done in the current MARLEY
 # implementation), the NC B(F) value is just gV^2 = 1 for a spin-zero
 # target nucleus.

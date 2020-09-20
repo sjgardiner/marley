@@ -55,6 +55,15 @@ namespace marley {
         NuElectronElastic = 3 ///< Neutrino-electron elastic scattering
       };
 
+      /// @brief Enumerated type describing the file format for reaction data
+      enum DataFormat {
+        /// Fermi and Gamow-Teller matrix elements are tabulated for discrete
+        /// nuclear levels
+        AllowedApproximation = 0,
+        /// Continuum nuclear responses are given for one or more multipoles
+        MultipoleResponses = 1
+      };
+
       /// @brief Compute the reaction's total cross section (MeV<sup> -2</sup>)
       /// @param pdg_a Projectile's PDG code
       /// @param KEa Lab-frame kinetic energy of the incident projectile

@@ -33,6 +33,7 @@
 #include "marley/Reaction.hh"
 #include "marley/StructureDatabase.hh"
 #include "marley/hepmc3_utils.hh"
+#include "marley/TabulatedReaction.hh"
 #include "marley/marley_kinematics.hh"
 #include "marley/marley_utils.hh"
 
@@ -197,6 +198,43 @@ namespace {
     }
   }
 
+  void get_residue_pdg_and_charge( marley::Reaction::ProcessType proc_type,
+    int pdg_b, int& pdg_d, int& q_d )
+  {
+    // First, figure out the PDG code for the final nucleus and its ionization
+    // state (net atomic charge after the 2->2 scatter)
+    int Zi = marley_utils::get_particle_Z( pdg_b );
+    int A = marley_utils::get_particle_A( pdg_b );
+
+    // NC scattering leaves the target nucleus the same
+    if ( proc_type == marley::Reaction::ProcessType::NC ) {
+      pdg_d = pdg_b;
+      q_d = 0;
+    }
+    // Neutrino CC scattering raises Z by one
+    else if ( proc_type == marley::Reaction::ProcessType::NeutrinoCC ) {
+      // Check that the neutron number of the target is positive
+      int Ni = A - Zi;
+      if ( Ni <= 0 ) throw marley::Error("A NeutrinoCC process requires"
+        " a target nucleus with N > 0");
+      int Zf = Zi + 1;
+      pdg_d = marley_utils::get_nucleus_pid(Zf, A);
+      // Recoil ion has charge +1
+      q_d = 1;
+    }
+    // Antineutrino CC scattering lowers Z by one
+    else if ( proc_type == marley::Reaction::ProcessType::AntiNeutrinoCC ) {
+      // Check that the neutron number of the target is positive
+      if ( Zi <= 0 ) throw marley::Error("An AntiNeutrinoCC process requires"
+        " a target nucleus with Z > 0");
+      int Zf = Zi - 1;
+      pdg_d = marley_utils::get_nucleus_pid(Zf, A);
+      // Recoil ion has charge -1
+      q_d = -1;
+    }
+    else throw marley::Error("Unrecognized ProcessType encountered in"
+      " marley::Reaction::load_from_file()");
+  }
 } // Anonymous namespace
 
 
@@ -390,107 +428,120 @@ std::vector< std::unique_ptr<marley::Reaction> >
   }
 
   // For nuclear reaction modes, there is a single target nucleus PDG code
-  // per file. After parsing it, we proceed to read in the matrix elements.
+  // per file.
   int pdg_b;
   iss >> pdg_b;
 
-  // Read in all of the level energy (MeV), squared matrix element (B(F) or
-  // B(GT) strength), and matrix element type identifier (0 represents B(F), 1
-  // represents B(GT)) triplets. Create a vector of MatrixElement objects based
-  // on this information. Use a shared pointer so that the vector can be
-  // re-used by multiple Reaction objects, one for each neutrino species for
-  // which the matrix elements are relevant. This avoids unnecessary
-  // duplication of storage for the matrix elements.
-  auto matrix_elements = std::make_shared<std::vector<
-    marley::MatrixElement> >();
+  // Multiple formats are allowed for the nuclear reaction modes. Get the
+  // format code from the current line in order to decide what to do next.
+  int integer_data_format;
+  iss >> integer_data_format;
+  auto df = static_cast<DataFormat>( integer_data_format );
 
-  // Set the old energy entry to the lowest representable double
-  // value. This guarantees that we always read in the first energy
-  // value given in the reaction data file
-  double old_energy = std::numeric_limits<double>::lowest();
-  while (line = marley_utils::get_next_line(file_in, rx_comment, false),
-    file_in.good())
-  {
-    iss.str(line);
-    iss.clear();
-    /// @todo Consider implementing a sorting procedure rather than strictly
-    /// enforcing that energies must be given in ascending order.
+  if ( df == AllowedApproximation ) {
 
-    // The order of the entries is important because later uses of the vector of
-    // matrix elements assume that they are sorted in order of ascending final
-    // level energy.
-    double energy, strength;
-    int integer_me_type;
-    iss >> energy >> strength >> integer_me_type;
-    if (old_energy >= energy) throw marley::Error(std::string("Invalid")
-      + " reaction dataset. Level energies must be unique and must be"
-      + " given in ascending order.");
+    // Read in all of the level energy (MeV), squared matrix element (B(F) or
+    // B(GT) strength), and matrix element type identifier (0 represents B(F),
+    // 1 represents B(GT)) triplets. Create a vector of MatrixElement objects
+    // based on this information. Use a shared pointer so that the vector can
+    // be re-used by multiple Reaction objects, one for each neutrino species
+    // for which the matrix elements are relevant. This avoids unnecessary
+    // duplication of storage for the matrix elements.
+    auto matrix_elements = std::make_shared<std::vector<
+      marley::MatrixElement> >();
 
-    // @todo Right now, 0 corresponds to a Fermi transition, and 1 corresponds
-    // to a Gamow-Teller transition. As you add new matrix element types,
-    // consider changing the convention and its implementation.
-    // All of the level pointers owned by the matrix elements will initially be
-    // set to nullptr. This may be changed later if discrete level data can be
-    // found for the residual nucleus.
-    matrix_elements->emplace_back(energy, strength,
-      static_cast<ME_Type>(integer_me_type), nullptr);
-    old_energy = energy;
+    // Set the old energy entry to the lowest representable double
+    // value. This guarantees that we always read in the first energy
+    // value given in the reaction data file
+    double old_energy = std::numeric_limits<double>::lowest();
+    while (line = marley_utils::get_next_line(file_in, rx_comment, false),
+      file_in.good())
+    {
+      iss.str(line);
+      iss.clear();
+      /// @todo Consider implementing a sorting procedure rather than strictly
+      /// enforcing that energies must be given in ascending order.
+
+      // The order of the entries is important because later uses of the vector
+      // of matrix elements assume that they are sorted in order of ascending
+      // final level energy.
+      double energy, strength;
+      int integer_me_type;
+      iss >> energy >> strength >> integer_me_type;
+      if (old_energy >= energy) throw marley::Error(std::string("Invalid")
+        + " reaction dataset. Level energies must be unique and must be"
+        + " given in ascending order.");
+
+      // @todo Right now, 0 corresponds to a Fermi transition, and 1
+      // corresponds to a Gamow-Teller transition. As you add new matrix
+      // element types, consider changing the convention and its
+      // implementation. All of the level pointers owned by the matrix elements
+      // will initially be set to nullptr. This may be changed later if
+      // discrete level data can be found for the residual nucleus.
+      matrix_elements->emplace_back(energy, strength,
+        static_cast<ME_Type>(integer_me_type), nullptr);
+      old_energy = energy;
+    }
+
+    // We now have all the information that we need. Build Reaction objects for
+    // all neutrino species that can participate in the process described by
+    // the matrix elements in the table. Use the ProcessType code to figure
+    // this out
+    int pdg_d, q_d;
+    get_residue_pdg_and_charge( proc_type, pdg_b, pdg_d, q_d );
+
+    // Now that we know the PDG code for the final nucleus, look up discrete
+    // level data for it. Set the level pointers for matrix elements
+    // representing transitions to discrete nuclear levels
+    set_level_ptrs( *matrix_elements, pdg_b, pdg_d, db );
+
+    // Now loop over the projectile PDG codes that can participate in the
+    // scattering process of interest. For each one, decide what the ejectile
+    // PDG code should be, then produce a corresponding Reaction object
+    for ( const int& pdg_a : get_projectiles(proc_type) ) {
+      int pdg_c = get_ejectile_pdg(pdg_a, proc_type);
+
+      loaded_reactions.emplace_back( std::make_unique<marley::NuclearReaction>(
+        proc_type, pdg_a, pdg_b, pdg_c, pdg_d, q_d, matrix_elements) );
+    }
+
   }
+  else if ( df == MultipoleResponses ) {
 
-  // We now have all the information that we need. Build Reaction objects
-  // for all neutrino species that can participate in the process described
-  // by the matrix elements in the table. Use the ProcessType code to
-  // figure this out
+    // Create a shared pointer to a TabulatedXSec object that will manage
+    // the tables of nuclear responses. These can be re-used for multiple
+    // neutrino flavors by separate Reaction objects.
+    auto txsec = std::make_shared< marley::TabulatedXSec >(
+      pdg_b, proc_type );
 
-  // First, figure out the PDG code for the final nucleus and its ionization
-  // state (net atomic charge after the 2->2 scatter)
-  int Zi = marley_utils::get_particle_Z( pdg_b );
-  int A = marley_utils::get_particle_A( pdg_b );
+    // Each line contains a file name corresponding to a distinct table
+    // of nuclear responses. Add each one to the map managed by the
+    // TabulatedXSec object.
+    std::string table_file_name;
+    while ( table_file_name = marley_utils::get_next_line(file_in,
+      rx_comment, false), file_in.good() )
+    {
+      txsec->add_table( table_file_name );
+    }
 
-  int pdg_d, q_d;
-  // NC scattering leaves the target nucleus the same
-  if ( proc_type == ProcessType::NC ) {
-    pdg_d = pdg_b;
-    q_d = 0;
+    // Get the PDG code and (net) charge of the final nucleus
+    int pdg_d, q_d;
+    get_residue_pdg_and_charge( proc_type, pdg_b, pdg_d, q_d );
+
+    // Now loop over the projectile PDG codes that can participate in the
+    // scattering process of interest. For each one, decide what the ejectile
+    // PDG code should be, then produce a corresponding Reaction object
+    for ( const int& pdg_a : get_projectiles(proc_type) ) {
+      int pdg_c = get_ejectile_pdg(pdg_a, proc_type);
+
+      loaded_reactions.emplace_back(
+        std::make_unique<marley::TabulatedReaction>( proc_type, pdg_a, pdg_b,
+          pdg_c, pdg_d, q_d, txsec) );
+    }
+
   }
-  // Neutrino CC scattering raises Z by one
-  else if ( proc_type == ProcessType::NeutrinoCC ) {
-    // Check that the neutron number of the target is positive
-    int Ni = A - Zi;
-    if ( Ni <= 0 ) throw marley::Error("A NeutrinoCC process requires"
-      " a target nucleus with N > 0");
-    int Zf = Zi + 1;
-    pdg_d = marley_utils::get_nucleus_pid(Zf, A);
-    // Recoil ion has charge +1
-    q_d = 1;
-  }
-  // Antineutrino CC scattering lowers Z by one
-  else if ( proc_type == ProcessType::AntiNeutrinoCC ) {
-    // Check that the neutron number of the target is positive
-    if ( Zi <= 0 ) throw marley::Error("An AntiNeutrinoCC process requires"
-      " a target nucleus with Z > 0");
-    int Zf = Zi - 1;
-    pdg_d = marley_utils::get_nucleus_pid(Zf, A);
-    // Recoil ion has charge -1
-    q_d = -1;
-  }
-  else throw marley::Error("Unrecognized ProcessType encountered in"
-    " marley::NuclearReaction::load_from_file()");
-
-  // Now that we know the PDG code for the final nucleus, look up discrete
-  // level data for it. Set the level pointers for matrix elements representing
-  // transitions to discrete nuclear levels
-  set_level_ptrs( *matrix_elements, pdg_b, pdg_d, db );
-
-  // Now loop over the projectile PDG codes that can participate in the
-  // scattering process of interest. For each one, decide what the ejectile
-  // PDG code should be, then produce a corresponding Reaction object
-  for ( const int& pdg_a : get_projectiles(proc_type) ) {
-    int pdg_c = get_ejectile_pdg(pdg_a, proc_type);
-
-    loaded_reactions.emplace_back( std::make_unique<marley::NuclearReaction>(
-      proc_type, pdg_a, pdg_b, pdg_c, pdg_d, q_d, matrix_elements) );
-  }
+  else throw marley::Error( "Unrecognized reaction data format"
+    " encountered in marley::Reaction::load_from_file()" );
 
   return loaded_reactions;
 }

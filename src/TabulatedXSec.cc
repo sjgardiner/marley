@@ -18,6 +18,8 @@
 #include <fstream>
 
 // MARLEY includes
+#include "marley/Error.hh"
+#include "marley/FileManager.hh"
 #include "marley/MassTable.hh"
 #include "marley/Reaction.hh"
 #include "marley/TabulatedXSec.hh"
@@ -31,8 +33,16 @@ marley::TabulatedXSec::TabulatedXSec( int target_pdg,
 
 void marley::TabulatedXSec::add_table( const std::string& file_name )
 {
-  // TODO: add error handling
-  std::ifstream in_file( file_name );
+  const auto& fm = marley::FileManager::Instance();
+  std::string full_file_name = fm.find_file( file_name );
+  if ( full_file_name.empty() ) {
+    throw marley::Error( "Could not open the nuclear response data file \""
+      + file_name + '\"' );
+  }
+
+  std::ifstream in_file( full_file_name );
+
+  // TODO: add error handling for file parsing
 
   // Multipole order
   unsigned J;
@@ -242,5 +252,17 @@ double marley::TabulatedXSec::integral( int pdg_a, double KEa,
   // We're done. Scale the integral over w by the needed prefactor
   integ *= dw;
 
+  return integ;
+}
+
+double marley::TabulatedXSec::integral( int pdg_a, double KEa )
+{
+  double integ = 0.;
+  for ( const auto& pair : responses_ ) {
+    double dummy;
+    const auto& ml = pair.first;
+    double integ_ml = this->integral( pdg_a, KEa, ml, dummy );
+    integ += integ_ml;
+  }
   return integ;
 }

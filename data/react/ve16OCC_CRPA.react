@@ -8,6 +8,8 @@
 # ProcessType code and nuclear target PDG code
 0 1000080160 1
 # List of nuclear response tables
-/Users/gardiner/marley/crpa/R_CRPA_O16/test0.txt
-/Users/gardiner/marley/crpa/R_CRPA_O16/test1.txt
-/Users/gardiner/marley/crpa/R_CRPA_O16/test4.txt
+crpa_test0.txt
+crpa_test1.txt
+crpa_test2.txt
+crpa_test3.txt
+crpa_test4.txt
