@@ -35,7 +35,7 @@ namespace marley {
         int pdg_b, int pdg_c, int pdg_d, int q_d,
         const std::shared_ptr<TabulatedXSec>& txsec );
 
-      inline virtual TargetAtom atomic_target() const
+      inline virtual TargetAtom atomic_target() const override
         { return TargetAtom( pdg_b_ ); }
 
       virtual Event create_event( int pdg_a, double KEa,
