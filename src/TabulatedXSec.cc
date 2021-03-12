@@ -25,6 +25,15 @@
 #include "marley/TabulatedXSec.hh"
 #include "marley/marley_utils.hh"
 
+namespace {
+  // Unphysical, just used as a placeholder
+  constexpr int DUMMY_HELICITY = 0;
+  // Helicity value for antineutrinos (right-handed)
+  constexpr int RIGHT_HANDED = 1;
+  // Helicity value for neutrinos (left-handed)
+  constexpr int LEFT_HANDED = -1;
+}
+
 marley::TabulatedXSec::TabulatedXSec( int target_pdg,
   marley::Reaction::ProcessType p_type )
   : ta_( target_pdg ), proc_type_( p_type )
@@ -111,7 +120,27 @@ void marley::TabulatedXSec::add_table( const std::string& file_name )
 double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   double cos_theta, const marley::TabulatedXSec::MultipoleLabel& ml )
 {
-  // TODO: check validity of pdg_a
+  int helicity = DUMMY_HELICITY;
+
+  // Assign a helicity value based on the PDG code and check the validity of
+  // pdg_a
+  if ( pdg_a == marley_utils::ELECTRON_NEUTRINO
+    || pdg_a == marley_utils::MUON_NEUTRINO
+    || pdg_a == marley_utils::TAU_NEUTRINO )
+  {
+    // All Standard Model neutrinos are left-handed
+    helicity = LEFT_HANDED;
+  }
+  else if ( pdg_a == marley_utils::ELECTRON_ANTINEUTRINO
+    || pdg_a == marley_utils::MUON_ANTINEUTRINO
+    || pdg_a == marley_utils::TAU_ANTINEUTRINO )
+  {
+    // All Standard Model antineutrinos are right-handed
+    helicity = RIGHT_HANDED;
+  }
+  else throw marley::Error( "Handling of particles with PDG code = "
+    + std::to_string(pdg_a) + " is unimplemented in the marley::"
+    "TabulatedXSec class" );
 
   // Look up the masses of the projectile and ejectile
   int pdg_c = marley::Reaction::get_ejectile_pdg( pdg_a, proc_type_ );
@@ -148,9 +177,10 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   double q2 = q*q;
   double vcc = 1. + beta * cos_theta;
   double vll = vcc - 2.*Ea*Ec*sin_theta2/q2;
-  double vcl = 2. * ( omega*vcc/q + mc*mc/Ec/q );
+  double vcl = -2. * ( omega*vcc/q + mc*mc/Ec/q );
   double vT = 1. - beta*cos_theta + Ea*Ec*beta*beta*sin_theta2/q2;
-  double vTprime = -2. * ( (Ea + Ec)*(1 - beta*cos_theta)/q - mc*mc/q/Ec );
+  double vTprime = -2. * helicity * ( (Ea + Ec)*(1 - beta*cos_theta)/q
+    - mc*mc/q/Ec );
   LeptonFactors lf( vcc, vll, vcl, vT, vTprime );
 
   // Compute the double-differential cross section with respect to
