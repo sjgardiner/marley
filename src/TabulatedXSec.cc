@@ -97,14 +97,14 @@ void marley::TabulatedXSec::add_table( const std::string& file_name )
     std::vector<marley::ResponseTable::NuclearResponses> >();
 
   // Temporary storage for responses
-  double rcc, rll, rcl, rt, rtprime;
+  double rcc, rll, rcl, rtVV, rtAA, rtprime;
 
   // Flag used to swap back and forth between natural and unnatural parity
   bool nat = true;
-  while ( in_file >> rcc >> rll >> rcl >> rt >> rtprime ) {
+  while ( in_file >> rcc >> rll >> rcl >> rtVV >> rtAA >> rtprime ) {
 
-    if ( nat ) nat_resp->emplace_back( rcc, rll, rcl, rt, rtprime );
-    else unnat_resp->emplace_back( rcc, rll, rcl, rt, rtprime );
+    if ( nat ) nat_resp->emplace_back( rcc, rll, rcl, rtVV, rtAA, rtprime );
+    else unnat_resp->emplace_back( rcc, rll, rcl, rtVV, rtAA, rtprime );
 
     // Flip the parity flag
     nat = !nat;

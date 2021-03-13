@@ -32,23 +32,26 @@ namespace marley {
 
         public:
 
-          NuclearResponses() : rCC_( 0. ), rLL_( 0. ), rCL_( 0. ), rT_( 0. ),
-            rTprime_( 0. ) {}
+          NuclearResponses() : rCC_( 0. ), rLL_( 0. ), rCL_( 0. ), rTvv_( 0. ),
+            rTaa_( 0. ), rTprime_( 0. ) {}
 
-          NuclearResponses( double rCC, double rLL, double rCL, double rT,
-            double rTprime ) : rCC_( rCC ), rLL_( rLL ), rCL_( rCL ), rT_( rT ),
-            rTprime_( rTprime ) {}
+          NuclearResponses( double rCC, double rLL, double rCL, double rTvv,
+            double rTaa, double rTprime ) : rCC_( rCC ), rLL_( rLL ),
+            rCL_( rCL ), rTvv_( rTvv ), rTaa_( rTaa ), rTprime_( rTprime ) {}
 
           inline double RCC() const { return rCC_; }
           inline double RLL() const { return rLL_; }
           inline double RCL() const { return rCL_; }
-          inline double RT() const { return rT_; }
+          inline double RT() const { return rTvv_ + rTaa_; }
+          inline double RTvv() const { return rTvv_; }
+          inline double RTaa() const { return rTaa_; }
           inline double RTprime() const { return rTprime_; }
 
           inline void set_RCC(double val) { rCC_ = val; }
           inline void set_RLL(double val) { rLL_ = val; }
           inline void set_RCL(double val) { rCL_ = val; }
-          inline void set_RT(double val) { rT_ = val; }
+          inline void set_RTvv(double val) { rTvv_ = val; }
+          inline void set_RTaa(double val) { rTaa_ = val; }
           inline void set_RTprime(double val) { rTprime_ = val; }
 
           // Scalar operations
@@ -81,7 +84,8 @@ namespace marley {
             bool are_equal = this->rCC_ == other.rCC_;
             if ( are_equal ) are_equal = this->rLL_ == other.rLL_;
             if ( are_equal ) are_equal = this->rCL_ == other.rCL_;
-            if ( are_equal ) are_equal = this->rT_ == other.rT_;
+            if ( are_equal ) are_equal = this->rTvv_ == other.rTvv_;
+            if ( are_equal ) are_equal = this->rTaa_ == other.rTaa_;
             if ( are_equal ) are_equal = this->rTprime_ == other.rTprime_;
             return are_equal;
           }
@@ -92,7 +96,7 @@ namespace marley {
 
           inline void print(std::ostream& out) const {
             out << rCC_ << ' ' << rLL_ << ' ' << rCL_ << ' '
-              << rT_ << ' ' << rTprime_;
+              << rTvv_ << ' ' << rTaa_ << ' ' << rTprime_;
           }
 
       protected:
@@ -107,7 +111,8 @@ namespace marley {
           result.rCC_ = my_function( this->rCC_, d );
           result.rLL_ = my_function( this->rLL_, d );
           result.rCL_ = my_function( this->rCL_, d );
-          result.rT_ = my_function( this->rT_, d );
+          result.rTvv_ = my_function( this->rTvv_, d );
+          result.rTaa_ = my_function( this->rTaa_, d );
           result.rTprime_ = my_function( this->rTprime_, d );
 
           return result;
@@ -123,7 +128,8 @@ namespace marley {
           result.rCC_ = my_function( this->rCC_, other.rCC_ );
           result.rLL_ = my_function( this->rLL_, other.rLL_ );
           result.rCL_ = my_function( this->rCL_, other.rCL_ );
-          result.rT_ = my_function( this->rT_, other.rT_ );
+          result.rTvv_ = my_function( this->rTvv_, other.rTvv_ );
+          result.rTaa_ = my_function( this->rTaa_, other.rTaa_ );
           result.rTprime_ = my_function( this->rTprime_, other.rTprime_ );
 
           return result;
@@ -132,7 +138,8 @@ namespace marley {
         double rCC_;
         double rLL_;
         double rCL_;
-        double rT_;
+        double rTvv_;
+        double rTaa_;
         double rTprime_;
 
       };
