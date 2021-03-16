@@ -18,57 +18,29 @@
 #include "marley/Error.hh"
 #include "marley/Generator.hh"
 #include "marley/MassTable.hh"
-#include "marley/TabulatedReaction.hh"
+#include "marley/TabulatedNuclearReaction.hh"
 #include "marley/marley_utils.hh"
 
-marley::TabulatedReaction::TabulatedReaction( Reaction::ProcessType pt,
-  int pdg_a, int pdg_b, int pdg_c, int pdg_d, int q_d,
-  const std::shared_ptr<TabulatedXSec>& txsec ) : q_d_( q_d ), xsec_( txsec )
+marley::TabulatedNuclearReaction::TabulatedNuclearReaction(
+  Reaction::ProcessType pt, int pdg_a, int pdg_b, int pdg_c, int pdg_d,
+  int q_d, const std::shared_ptr<TabulatedXSec>& txsec )
+  : marley::NuclearReaction( pt, pdg_a, pdg_b, pdg_c, pdg_d, q_d ),
+  xsec_( txsec )
 {
-  process_type_ = pt;
-
-  pdg_a_ = pdg_a;
-  pdg_b_ = pdg_b;
-  pdg_c_ = pdg_c;
-  pdg_d_ = pdg_d;
-
-  const auto& mt = marley::MassTable::Instance();
-  ma_ = mt.get_particle_mass( pdg_a_ );
-  mc_ = mt.get_particle_mass( pdg_c_ );
-
-  mb_ = mt.get_atomic_mass( pdg_b_ );
-
-  double me = mt.get_particle_mass( marley_utils::ELECTRON );
-  md_gs_ = mt.get_atomic_mass( pdg_d_ ) - q_d_*me;
-
-  double KEa_threshold_ = ( std::pow(mc_ + md_gs_, 2)
-    - std::pow(ma_ + mb_, 2) ) / ( 2.*mb_ );
-
-  // Set the string description for this reaction based on the involved
-  // particles
-  std::stringstream temp_ss;
-  temp_ss << marley_utils::get_particle_symbol( pdg_a_ ) << " + ";
-  temp_ss << this->atomic_target() << " --> ";
-  temp_ss << marley_utils::get_particle_symbol( pdg_c_ ) << " + ";
-  temp_ss << marley::TargetAtom( pdg_d_ ) << '*';
-
-  description_ = temp_ss.str();
 }
 
-double marley::TabulatedReaction::threshold_kinetic_energy() const
+double marley::TabulatedNuclearReaction::total_xs( int pdg_a,
+  double KEa ) const
 {
-  return KEa_threshold_;
-}
-
-double marley::TabulatedReaction::total_xs( int pdg_a, double KEa ) const {
   if ( pdg_a != pdg_a_ ) return 0.;
   return xsec_->integral( pdg_a, KEa );
 }
 
-marley::Event marley::TabulatedReaction::create_event( int pdg_a, double KEa,
-  marley::Generator& gen ) const
+marley::Event marley::TabulatedNuclearReaction::create_event( int pdg_a,
+  double KEa, marley::Generator& gen ) const
 {
-  // TODO: reduce code duplication here with NuclearReaction
+  // TODO: reduce code duplication here with AllowedNuclearReaction using the
+  // common base class NuclearReaction
 
   // Check that the projectile supplied to this event is correct. If not, alert
   // the user that this event does not use the requested projectile.
@@ -224,4 +196,14 @@ marley::Event marley::TabulatedReaction::create_event( int pdg_a, double KEa,
   // Create the event object and load it with the appropriate information
   marley::Event event( projectile, target, ejectile, residue, Ex, twoJ, P );
   return event;
+}
+
+// Adds an indication to the description that the daughter nucleus will always
+// be left in an excited state.
+// TODO: revisit this as needed. I assume here that the
+// TabulatedNuclearReaction class will always be used for calculations in the
+// unbound continuum of nuclear levels
+void marley::TabulatedNuclearReaction::set_description() {
+  marley::NuclearReaction::set_description();
+  description_ += '*';
 }

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "marley/Error.hh"
 #include "marley/Level.hh"
 
 namespace marley {

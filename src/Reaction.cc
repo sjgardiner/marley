@@ -25,15 +25,15 @@
 #include "HepMC3/GenParticle.h"
 
 // MARLEY includes
+#include "marley/AllowedNuclearReaction.hh"
 #include "marley/ElectronReaction.hh"
 #include "marley/HauserFeshbachDecay.hh"
 #include "marley/Logger.hh"
 #include "marley/MatrixElement.hh"
-#include "marley/NuclearReaction.hh"
 #include "marley/Reaction.hh"
 #include "marley/StructureDatabase.hh"
 #include "marley/hepmc3_utils.hh"
-#include "marley/TabulatedReaction.hh"
+#include "marley/TabulatedNuclearReaction.hh"
 #include "marley/marley_kinematics.hh"
 #include "marley/marley_utils.hh"
 
@@ -501,8 +501,10 @@ std::vector< std::unique_ptr<marley::Reaction> >
     for ( const int& pdg_a : get_projectiles(proc_type) ) {
       int pdg_c = get_ejectile_pdg(pdg_a, proc_type);
 
-      loaded_reactions.emplace_back( std::make_unique<marley::NuclearReaction>(
-        proc_type, pdg_a, pdg_b, pdg_c, pdg_d, q_d, matrix_elements) );
+      loaded_reactions.emplace_back(
+        std::make_unique< marley::AllowedNuclearReaction >( proc_type, pdg_a,
+        pdg_b, pdg_c, pdg_d, q_d, matrix_elements )
+      );
     }
 
   }
@@ -538,8 +540,9 @@ std::vector< std::unique_ptr<marley::Reaction> >
       txsec->optimize( pdg_a, 100. );
 
       loaded_reactions.emplace_back(
-        std::make_unique<marley::TabulatedReaction>( proc_type, pdg_a, pdg_b,
-          pdg_c, pdg_d, q_d, txsec) );
+        std::make_unique< marley::TabulatedNuclearReaction >( proc_type, pdg_a,
+          pdg_b, pdg_c, pdg_d, q_d, txsec )
+      );
     }
 
   }
