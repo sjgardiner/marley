@@ -38,10 +38,6 @@ namespace marley {
       virtual Event create_event( int pdg_a, double KEa,
         Generator& gen ) const override;
 
-      // TODO: write this correctly
-      inline virtual double diff_xs( int pdg_a, double KEa,
-        double cos_theta_c_cm ) const override { return 0.; }
-
       virtual double total_xs( int pdg_a, double KEa ) const override;
 
     protected:

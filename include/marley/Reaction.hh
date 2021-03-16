@@ -72,17 +72,6 @@ namespace marley {
       /// if pdg_a != pdg_a_.
       virtual double total_xs( int pdg_a, double KEa ) const = 0;
 
-      /// @brief Differential cross section
-      /// @f$d\sigma/d\cos\theta_{c}^{\mathrm{CM}}@f$
-      /// (MeV<sup> -2</sup>)
-      /// @param pdg_a PDG code for the projectile
-      /// @param KEa Lab-frame kinetic energy (MeV) of the projectile
-      /// @param cos_theta_c_cm CM frame scattering cosine of the ejectile
-      /// @note Functions that override diff_xs() should always return zero
-      /// if pdg_a != pdg_a_.
-      virtual double diff_xs( int pdg_a, double KEa,
-        double cos_theta_c_cm ) const = 0;
-
       /// @brief Create an event object for this reaction
       /// @param pdg_a PDG code for the incident projectile
       /// @param KEa Lab-frame kinetic energy of the projectile

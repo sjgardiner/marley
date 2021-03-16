@@ -47,7 +47,7 @@ namespace marley {
 
       // Differential cross section (MeV^(-2)) in the CM frame
       virtual double diff_xs(int pdg_a, double KEa, double cos_theta_c_cm)
-        const override;
+        const;
 
       // Creates an event object for this reaction using the generator gen
       virtual std::shared_ptr< HepMC3::GenEvent > create_event(
