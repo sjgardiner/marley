@@ -37,7 +37,7 @@
 
 using InterpMethod = marley::InterpolationGrid<double>::InterpolationMethod;
 using ProcType = marley::Reaction::ProcessType;
-using CMode = marley::NuclearReaction::CoulombMode;
+using CMode = marley::CoulombCorrector::CoulombMode;
 
 // anonymous namespace for helper functions, etc.
 namespace {
@@ -202,7 +202,7 @@ marley::Generator marley::JSONConfig::create_generator() const
     if ( !cmode.is_string() ) throw marley::Error( "Invalid Coulomb mode"
       " specification " + cmode.dump_string() );
     std::string my_mode = cmode.to_string();
-    coulomb_mode = marley::NuclearReaction
+    coulomb_mode = marley::CoulombCorrector
       ::coulomb_mode_from_string( my_mode );
   }
 
@@ -219,13 +219,13 @@ marley::Generator marley::JSONConfig::create_generator() const
     }
 
     auto* nr = dynamic_cast< marley::NuclearReaction* >( react.get() );
-    if ( nr ) nr->set_coulomb_mode( coulomb_mode );
+    if ( nr ) nr->get_coulomb_corrector().set_coulomb_mode( coulomb_mode );
   }
 
   // If a CC reaction is configured, then print a logging message indicating
   // which Coulomb correction method is active. Otherwise, don't bother.
   if ( found_cc ) {
-    std::string cmode_str = marley::NuclearReaction
+    std::string cmode_str = marley::CoulombCorrector
       ::string_from_coulomb_mode( coulomb_mode );
     MARLEY_LOG_INFO() << "Configured Coulomb correction method: " << cmode_str;
   }

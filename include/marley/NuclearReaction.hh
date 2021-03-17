@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "marley/CoulombCorrector.hh"
 #include "marley/DecayScheme.hh"
 #include "marley/Level.hh"
 #include "marley/MassTable.hh"
@@ -48,25 +49,12 @@ namespace marley {
       NuclearReaction( ProcessType pt, int pdg_a, int pdg_b, int pdg_c,
         int pdg_d, int q_d );
 
-      /// @brief Enumerated type used to set the method for handling Coulomb
-      /// corrections for CC nuclear reactions
-      enum class CoulombMode { NO_CORRECTION, FERMI_FUNCTION, EMA, MEMA,
-        FERMI_AND_EMA, FERMI_AND_MEMA };
-
       inline virtual marley::TargetAtom atomic_target() const override final
         { return marley::TargetAtom( pdg_b_ ); }
 
       /// Produces a two-two scattering Event that proceeds via this reaction
       virtual std::shared_ptr< HepMC3::GenEvent > create_event(
         int particle_id_a, double KEa, marley::Generator& gen) const override;
-
-      /// @brief Compute the
-      /// <a href="https://en.wikipedia.org/wiki/Beta_decay#Fermi_function">
-      /// Fermi function</a>
-      /// @param beta_c <a
-      /// href="http://scienceworld.wolfram.com/physics/RelativisticBeta.html">
-      /// Dimensionless speed</a> of the ejectile
-      double fermi_function( double beta_c ) const;
 
       /// @brief Get the minimum lab-frame kinetic energy (MeV) of the
       /// projectile that allows this reaction to proceed via a transition to
@@ -78,23 +66,6 @@ namespace marley {
       /// @param KEa Projectile lab-frame kinetic energy (MeV)
       double max_level_energy( double KEa ) const;
 
-      /// Computes an approximate correction factor to account for
-      /// effects of the Coulomb potential when calculating cross sections
-      /// @param beta_rel_cd The relative speed of the final particles c and d
-      /// (dimensionless)
-      double coulomb_correction_factor( double beta_rel_cd ) const;
-
-      /// Computes a Coulomb correction factor according to the effective
-      /// momentum approximation. See J. Engel, Phys. Rev. C 57, 2004 (1998)
-      /// @param beta_rel_cd The relative speed of the final particles c and d
-      /// (dimensionless)
-      /// @param[out] ok Flag that is set to false if subtracting the Coulomb
-      /// potential pulls the event below threshold
-      /// @param modified_ema If true, the modified EMA correction factor will
-      /// be returned instead of that specified by the original EMA
-      double ema_factor( double beta_rel_cd, bool& ok,
-        bool modified_ema ) const;
-
       /// Computes the weak nuclear charge @f$ Q_W = N - (1
       /// - 4\sin^2\theta_W)Z @f$ for the target nucleus
       /// @details In the expression above, @f$ N @f$ (@f$Z@f$) is the
@@ -102,26 +73,16 @@ namespace marley {
       /// @f$ \theta_W @f$ is the weak mixing angle.
       double weak_nuclear_charge() const;
 
-      /// Return the method used by this reaction for handling Coulomb
-      /// corrections
-      inline CoulombMode coulomb_mode() const
-        { return coulomb_mode_; }
+      /// @brief Provides read-only access to the owned CoulombCorrector object
+      inline const CoulombCorrector& get_coulomb_corrector() const
+        { return coulomb_corrector_; }
 
-      /// Set the method for handling Coulomb corrections for this reaction
-      inline void set_coulomb_mode( CoulombMode mode )
-        { coulomb_mode_ = mode; }
-
-      /// Convert a string to a CoulombMode value
-      static CoulombMode coulomb_mode_from_string( const std::string& str );
-
-      /// Convert a CoulombMode value to a string
-      static std::string string_from_coulomb_mode( CoulombMode mode );
+      /// @brief Provides unrestricted access to the owned CoulombCorrector
+      /// object
+      inline CoulombCorrector& get_coulomb_corrector()
+        { return coulomb_corrector_; }
 
     protected:
-
-      /// Helper map used by the methods to convert a CoulombMode value
-      /// to and from a std::string
-      static std::map< CoulombMode, std::string > coulomb_mode_string_map_;
 
       /// @brief Creates the description string based on the
       /// PDG code values for the initial and final particles
@@ -143,10 +104,9 @@ namespace marley {
       /// all final-state particles are at rest in the CM frame)
       double KEa_threshold_;
 
-      /// @brief The method to use when computing Coulomb corrections (if
-      /// needed) for this reaction
-      CoulombMode coulomb_mode_ = CoulombMode::FERMI_AND_MEMA;
-
+      /// @brief Object used to apply Coulomb corrections (if needed) to the
+      /// cross-section calculation for this reaction
+      CoulombCorrector coulomb_corrector_;
   };
 
 }

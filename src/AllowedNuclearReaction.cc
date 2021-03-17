@@ -32,7 +32,6 @@
 
 using ME_Type = marley::MatrixElement::TransitionType;
 using ProcType = marley::Reaction::ProcessType;
-using CMode = marley::NuclearReaction::CoulombMode;
 
 namespace {
   constexpr int BOGUS_TWO_J_VALUE = -99999;
@@ -402,7 +401,8 @@ double marley::AllowedNuclearReaction::total_xs(const marley::MatrixElement& me,
   {
     // Calculate a Coulomb correction factor using either a Fermi function
     // or the effective momentum approximation
-    double factor_C = coulomb_correction_factor( beta_rel_cd );
+    double factor_C = coulomb_corrector_.coulomb_correction_factor(
+      beta_rel_cd );
     total_xsec *= marley_utils::Vud2 * factor_C;
   }
   else if ( process_type_ == ProcessType::NC )
