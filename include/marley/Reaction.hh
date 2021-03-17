@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "marley/CoulombCorrector.hh"
 #include "marley/MassTable.hh"
 #include "marley/TargetAtom.hh"
 
@@ -110,11 +111,16 @@ namespace marley {
       /// Reaction objects given a file with matrix element data
       static std::vector< std::unique_ptr<Reaction> >
         load_from_file( const std::string& filename,
-        marley::StructureDatabase& db );
+        StructureDatabase& db, CoulombCorrector::CoulombMode coulomb_mode );
 
       /// Function that returns the ejectile PDG code given the projectile
       /// PDG code and the ProcessType
       static int get_ejectile_pdg( int pdg_a, ProcessType proc_type );
+
+      /// Determines the PDG code and net charge of the residue given the
+      /// target PDG code and the process type
+      static void get_residue_pdg_and_charge( ProcessType proc_type,
+        int pdg_b, int& pdg_d, int& q_d );
 
     protected:
 

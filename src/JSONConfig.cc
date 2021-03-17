@@ -156,6 +156,20 @@ marley::Generator marley::JSONConfig::create_generator() const
   // user-supplied seed or the current number of seconds since the Unix epoch.
   marley::Generator gen( seed );
 
+  // Set the method to use for computing Coulomb corrections in all reactions.
+  // If the user gave an explicit setting for this, use that.
+  // Otherwise, interpolate between the Fermi function and the modified
+  // effective momentum approximation.
+  CMode coulomb_mode = CMode::FERMI_AND_MEMA; // Default method
+  if ( json_.has_key("coulomb_mode") ) {
+    const auto& cmode = json_.at( "coulomb_mode" );
+    if ( !cmode.is_string() ) throw marley::Error("Invalid Coulomb mode"
+      " specification " + cmode.dump_string() );
+    std::string my_mode = cmode.to_string();
+    coulomb_mode = marley::CoulombCorrector
+      ::coulomb_mode_from_string( my_mode );
+  }
+
   // Turn off calls to Generator::normalize_E_pdf() until we
   // have set up all the needed pieces
   gen.dont_normalize_E_pdf_ = true;
@@ -164,7 +178,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   prepare_direction( gen );
   prepare_structure( gen );
   prepare_neutrino_source( gen );
-  prepare_reactions( gen );
+  prepare_reactions( gen, coulomb_mode );
   prepare_target( gen );
 
   // If the user has disabled nuclear de-excitations, then set the
@@ -217,9 +231,6 @@ marley::Generator marley::JSONConfig::create_generator() const
     if ( pt == ProcType::NeutrinoCC || pt == ProcType::AntiNeutrinoCC ) {
       found_cc = true;
     }
-
-    auto* nr = dynamic_cast< marley::NuclearReaction* >( react.get() );
-    if ( nr ) nr->get_coulomb_corrector().set_coulomb_mode( coulomb_mode );
   }
 
   // If a CC reaction is configured, then print a logging message indicating
@@ -354,8 +365,9 @@ void marley::JSONConfig::prepare_direction( marley::Generator& gen ) const {
   }
 }
 
-void marley::JSONConfig::prepare_reactions( marley::Generator& gen ) const {
-
+void marley::JSONConfig::prepare_reactions( marley::Generator& gen,
+  CMode coulomb_mode ) const
+{
   const auto& fm = marley::FileManager::Instance();
 
   if ( json_.has_key("reactions") ) {
@@ -393,7 +405,7 @@ void marley::JSONConfig::prepare_reactions( marley::Generator& gen ) const {
           }
 
           auto reacts = marley::Reaction::load_from_file(
-            full_file_name, gen.get_structure_db() );
+            full_file_name, gen.get_structure_db(), coulomb_mode );
 
           if ( reacts.empty() ) throw marley::Error( "Failed to load"
             " any reactions from the file " + full_file_name + ". Please"

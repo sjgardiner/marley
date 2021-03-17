@@ -20,6 +20,7 @@
 #include <string>
 
 // MARLEY includes
+#include "marley/CoulombCorrector.hh"
 #include "marley/Generator.hh"
 #include "marley/InterpolationGrid.hh"
 #include "marley/JSON.hh"
@@ -40,7 +41,8 @@ namespace marley {
 
       void prepare_direction( marley::Generator& gen ) const;
       void prepare_neutrino_source( marley::Generator& gen ) const;
-      void prepare_reactions( marley::Generator& gen ) const;
+      void prepare_reactions( marley::Generator& gen,
+        marley::CoulombCorrector::CoulombMode coulomb_mode ) const;
       void prepare_structure( marley::Generator& gen ) const;
       void prepare_target( marley::Generator& gen ) const;
 

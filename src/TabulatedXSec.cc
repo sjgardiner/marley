@@ -35,9 +35,13 @@ namespace {
 }
 
 marley::TabulatedXSec::TabulatedXSec( int target_pdg,
-  marley::Reaction::ProcessType p_type )
-  : ta_( target_pdg ), proc_type_( p_type )
+  marley::Reaction::ProcessType p_type, CoulombCorrector::CoulombMode mode )
+  : ta_( target_pdg ), proc_type_( p_type ), coulomb_mode_( mode )
 {
+  // Set the residue PDG code (pdg_d_) based on the input information
+  int dummy_charge;
+  marley::Reaction::get_residue_pdg_and_charge( p_type, target_pdg,
+    pdg_d_, dummy_charge );
 }
 
 void marley::TabulatedXSec::add_table( const std::string& file_name )

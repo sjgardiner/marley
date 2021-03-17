@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "marley/CoulombCorrector.hh"
 #include "marley/DecayScheme.hh"
 #include "marley/Event.hh"
 #include "marley/Level.hh"
@@ -49,9 +50,12 @@ namespace marley {
       /// represented by this AllowedNuclearReaction object
       /// @param mat_els A vector of MatrixElement objects that should
       /// be used to compute cross sections for this AllowedNuclearReaction
+      /// @param mode Indicates the method to use when computing Coulomb
+      /// corrections for the reaction cross section
       AllowedNuclearReaction( ProcessType pt, int pdg_a, int pdg_b, int pdg_c,
         int pdg_d, int q_d,
-        const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els );
+        const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els,
+        CoulombCorrector::CoulombMode mode );
 
       /// Produces a two-two scattering Event that proceeds via this reaction
       virtual marley::Event create_event( int particle_id_a,
@@ -152,6 +156,9 @@ namespace marley {
       /// @brief Matrix elements representing all of the possible nuclear
       /// transitions that may be caused by this reaction
       std::shared_ptr< std::vector<marley::MatrixElement> > matrix_elements_;
+
+      /// @brief Object that handles calculations of Coulomb correction factors
+      CoulombCorrector coulomb_corrector_;
   };
 
 }

@@ -198,43 +198,6 @@ namespace {
     }
   }
 
-  void get_residue_pdg_and_charge( marley::Reaction::ProcessType proc_type,
-    int pdg_b, int& pdg_d, int& q_d )
-  {
-    // First, figure out the PDG code for the final nucleus and its ionization
-    // state (net atomic charge after the 2->2 scatter)
-    int Zi = marley_utils::get_particle_Z( pdg_b );
-    int A = marley_utils::get_particle_A( pdg_b );
-
-    // NC scattering leaves the target nucleus the same
-    if ( proc_type == marley::Reaction::ProcessType::NC ) {
-      pdg_d = pdg_b;
-      q_d = 0;
-    }
-    // Neutrino CC scattering raises Z by one
-    else if ( proc_type == marley::Reaction::ProcessType::NeutrinoCC ) {
-      // Check that the neutron number of the target is positive
-      int Ni = A - Zi;
-      if ( Ni <= 0 ) throw marley::Error("A NeutrinoCC process requires"
-        " a target nucleus with N > 0");
-      int Zf = Zi + 1;
-      pdg_d = marley_utils::get_nucleus_pid(Zf, A);
-      // Recoil ion has charge +1
-      q_d = 1;
-    }
-    // Antineutrino CC scattering lowers Z by one
-    else if ( proc_type == marley::Reaction::ProcessType::AntiNeutrinoCC ) {
-      // Check that the neutron number of the target is positive
-      if ( Zi <= 0 ) throw marley::Error("An AntiNeutrinoCC process requires"
-        " a target nucleus with Z > 0");
-      int Zf = Zi - 1;
-      pdg_d = marley_utils::get_nucleus_pid(Zf, A);
-      // Recoil ion has charge -1
-      q_d = -1;
-    }
-    else throw marley::Error("Unrecognized ProcessType encountered in"
-      " marley::Reaction::load_from_file()");
-  }
 } // Anonymous namespace
 
 
@@ -366,8 +329,8 @@ const std::vector<int>& marley::Reaction::get_projectiles(ProcType pt) {
 }
 
 std::vector< std::unique_ptr<marley::Reaction> >
-  marley::Reaction::load_from_file(const std::string& filename,
-  marley::StructureDatabase& db)
+  marley::Reaction::load_from_file( const std::string& filename,
+  marley::StructureDatabase& db, CoulombCorrector::CoulombMode coulomb_mode )
 {
   // Create an empty vector to start
   std::vector< std::unique_ptr<marley::Reaction> > loaded_reactions;
@@ -503,7 +466,7 @@ std::vector< std::unique_ptr<marley::Reaction> >
 
       loaded_reactions.emplace_back(
         std::make_unique< marley::AllowedNuclearReaction >( proc_type, pdg_a,
-        pdg_b, pdg_c, pdg_d, q_d, matrix_elements )
+        pdg_b, pdg_c, pdg_d, q_d, matrix_elements, coulomb_mode )
       );
     }
 
@@ -514,7 +477,7 @@ std::vector< std::unique_ptr<marley::Reaction> >
     // the tables of nuclear responses. These can be re-used for multiple
     // neutrino flavors by separate Reaction objects.
     auto txsec = std::make_shared< marley::TabulatedXSec >(
-      pdg_b, proc_type );
+      pdg_b, proc_type, coulomb_mode );
 
     // Each line contains a file name corresponding to a distinct table
     // of nuclear responses. Add each one to the map managed by the
@@ -550,4 +513,42 @@ std::vector< std::unique_ptr<marley::Reaction> >
     " encountered in marley::Reaction::load_from_file()" );
 
   return loaded_reactions;
+}
+
+void marley::Reaction::get_residue_pdg_and_charge(
+  marley::Reaction::ProcessType proc_type, int pdg_b, int& pdg_d, int& q_d )
+{
+  // First, figure out the PDG code for the final nucleus and its ionization
+  // state (net atomic charge after the 2->2 scatter)
+  int Zi = marley_utils::get_particle_Z( pdg_b );
+  int A = marley_utils::get_particle_A( pdg_b );
+
+  // NC scattering leaves the target nucleus the same
+  if ( proc_type == marley::Reaction::ProcessType::NC ) {
+    pdg_d = pdg_b;
+    q_d = 0;
+  }
+  // Neutrino CC scattering raises Z by one
+  else if ( proc_type == marley::Reaction::ProcessType::NeutrinoCC ) {
+    // Check that the neutron number of the target is positive
+    int Ni = A - Zi;
+    if ( Ni <= 0 ) throw marley::Error("A NeutrinoCC process requires"
+      " a target nucleus with N > 0");
+    int Zf = Zi + 1;
+    pdg_d = marley_utils::get_nucleus_pid(Zf, A);
+    // Recoil ion has charge +1
+    q_d = 1;
+  }
+  // Antineutrino CC scattering lowers Z by one
+  else if ( proc_type == marley::Reaction::ProcessType::AntiNeutrinoCC ) {
+    // Check that the neutron number of the target is positive
+    if ( Zi <= 0 ) throw marley::Error("An AntiNeutrinoCC process requires"
+      " a target nucleus with Z > 0");
+    int Zf = Zi - 1;
+    pdg_d = marley_utils::get_nucleus_pid(Zf, A);
+    // Recoil ion has charge -1
+    q_d = -1;
+  }
+  else throw marley::Error( "Unrecognized ProcessType encountered in"
+    " marley::Reaction::get_residue_pdg_and_charge()" );
 }

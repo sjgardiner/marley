@@ -20,6 +20,7 @@
 #include <map>
 
 // MARLEY includes
+#include "marley/CoulombCorrector.hh"
 #include "marley/ChebyshevInterpolatingFunction.hh"
 #include "marley/Parity.hh"
 #include "marley/Reaction.hh"
@@ -34,7 +35,8 @@ namespace marley {
     public:
 
       explicit TabulatedXSec( int target_pdg,
-        marley::Reaction::ProcessType p_type );
+        marley::Reaction::ProcessType p_type,
+        marley::CoulombCorrector::CoulombMode mode );
 
       void add_table( const std::string& file_name );
 
@@ -153,6 +155,13 @@ namespace marley {
 
       /// Kind of process for which the cross section will be computed
       marley::Reaction::ProcessType proc_type_;
+
+      /// Method to use for computing Coulomb corrections to the cross section
+      marley::CoulombCorrector::CoulombMode coulomb_mode_;
+
+      /// PDG code of the nuclear residue produced by the reaction described by
+      /// this cross section
+      int pdg_d_;
 
       /// Tables of nuclear responses organized by multipole
       std::map< MultipoleLabel, ResponseTable > responses_;

@@ -39,9 +39,10 @@ namespace {
 
 marley::AllowedNuclearReaction::AllowedNuclearReaction( ProcType pt,
   int pdg_a, int pdg_b, int pdg_c, int pdg_d, int q_d,
-  const std::shared_ptr< std::vector<marley::MatrixElement> >& mat_els )
+  const std::shared_ptr< std::vector<marley::MatrixElement> >& mat_els,
+  marley::CoulombCorrector::CoulombMode mode )
   : marley::NuclearReaction( pt, pdg_a, pdg_b, pdg_c, pdg_d, q_d ),
-  matrix_elements_( mat_els )
+  matrix_elements_( mat_els ), coulomb_corrector_( pdg_c, pdg_d, mode )
 {
 }
 

@@ -22,7 +22,6 @@
 #include <string>
 #include <vector>
 
-#include "marley/CoulombCorrector.hh"
 #include "marley/DecayScheme.hh"
 #include "marley/Level.hh"
 #include "marley/MassTable.hh"
@@ -73,15 +72,6 @@ namespace marley {
       /// @f$ \theta_W @f$ is the weak mixing angle.
       double weak_nuclear_charge() const;
 
-      /// @brief Provides read-only access to the owned CoulombCorrector object
-      inline const CoulombCorrector& get_coulomb_corrector() const
-        { return coulomb_corrector_; }
-
-      /// @brief Provides unrestricted access to the owned CoulombCorrector
-      /// object
-      inline CoulombCorrector& get_coulomb_corrector()
-        { return coulomb_corrector_; }
-
     protected:
 
       /// @brief Creates the description string based on the
@@ -103,10 +93,6 @@ namespace marley {
       /// this reaction (i.e., the residue is produced in its ground state, and
       /// all final-state particles are at rest in the CM frame)
       double KEa_threshold_;
-
-      /// @brief Object used to apply Coulomb corrections (if needed) to the
-      /// cross-section calculation for this reaction
-      CoulombCorrector coulomb_corrector_;
   };
 
 }
