@@ -120,7 +120,6 @@ void marley::TabulatedXSec::add_table( const std::string& file_name )
 
 }
 
-
 double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   double cos_theta, const marley::TabulatedXSec::MultipoleLabel& ml )
 {
@@ -170,10 +169,25 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   // multipole
   const auto& rt = this->responses_.at( ml );
 
-  // Interpolate a set of nuclear responses for the given omega and q values
-  if ( omega < rt.w_min() || omega > rt.w_max()
+  // For CC interactions, apply an energy shift to account for the difference
+  // in energy between the ground state of the initial nucleus and the
+  // isobaric analog state in the final nucleus. This leads to an effective
+  // energy transfer value omega_eff which is used when evaluating the
+  // nuclear response functions.
+  double omega_eff = omega;
+  bool is_cc = ( proc_type_ == marley::Reaction::ProcessType::NeutrinoCC
+    || proc_type_ == marley::Reaction::ProcessType::AntiNeutrinoCC );
+
+  // TODO: apply energy shift
+  //if ( is_cc ) {
+  //  omega_eff -= Delta_;
+  //}
+
+  // Interpolate a set of nuclear responses for the given omega_eff and q
+  // values
+  if ( omega_eff < rt.w_min() || omega_eff > rt.w_max()
     || q < rt.q_min() || q > rt.q_max() ) return 0.;
-  auto nr = rt.interpolate( omega, q );
+  auto nr = rt.interpolate( omega_eff, q );
 
   // Compute the lepton factors
   double beta = pc / Ec;
@@ -191,6 +205,35 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   // the energy transfer and the scattering cosine
   double xsec = lf * nr;
   xsec *= 2. * marley_utils::GF2 * marley_utils::Vud2 * Ec * pc;
+
+  // For CC cross sections, apply the appropriate correction factor for
+  // Coulomb corrections based on the active "Coulomb mode"
+  if ( is_cc ) {
+
+    // Get the mass of the atomic target
+    double mb = mt.get_atomic_mass( ta_.pdg() );
+
+    // Lab-frame total energy of the residue (via energy conservation)
+    double Ed = omega + mb;
+
+    // Mass of the residue (via 3-momentum conservation)
+    double md = Ed*Ed - q*q;
+
+    // Dot product of the 4-momenta of the ejectile and residue
+    double pc_dot_pd = Ec*Ed + pc*pc - pa*pc*cos_theta;
+
+    // Manifestly Lorentz-invariant relative speed of particles c and d
+    double beta_rel_cd = marley_utils::real_sqrt(
+    std::pow(pc_dot_pd, 2) - mc*mc*md*md ) / pc_dot_pd;
+
+    // Compute the Coulomb correction factor using the relative speed
+    CoulombCorrector coul_corr( pdg_c, pdg_d_, coulomb_mode_ );
+    double FC = coul_corr.coulomb_correction_factor( beta_rel_cd );
+
+    // Apply it to the differential cross section
+    xsec *= FC;
+  }
+
   return xsec;
 }
 
@@ -363,8 +406,8 @@ void marley::TabulatedXSec::optimize( int pdg_a, double max_KEa ) {
         if ( xsec <= 0. ) low_KEa = cur_KEa;
         // If it doesn't, move the upper bound down
         else high_KEa = cur_KEa;
-        // Continue until the bracketing interval is no larger than the tolerance
-        // defined above
+        // Continue until the bracketing interval is no larger than the
+        // tolerance defined above
       } while ( std::abs(high_KEa - low_KEa) > thresh_tol );
 
       // Adopt the lower bound of the bracketing interval as the threshold
