@@ -473,11 +473,18 @@ std::vector< std::unique_ptr<marley::Reaction> >
   }
   else if ( df == MultipoleResponses ) {
 
+    // An energy shift is provided following the data format code if we
+    // are working with multipole responses. This accounts for the energy
+    // difference between the ground state of the initial nucleus and the
+    // isobaric analog state in the daughter nucleus.
+    double Delta;
+    iss >> Delta;
+
     // Create a shared pointer to a TabulatedXSec object that will manage
     // the tables of nuclear responses. These can be re-used for multiple
     // neutrino flavors by separate Reaction objects.
     auto txsec = std::make_shared< marley::TabulatedXSec >(
-      pdg_b, proc_type, coulomb_mode );
+      pdg_b, proc_type, coulomb_mode, Delta );
 
     // Each line contains a file name corresponding to a distinct table
     // of nuclear responses. Add each one to the map managed by the

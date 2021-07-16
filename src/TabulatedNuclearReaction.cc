@@ -156,8 +156,9 @@ marley::Event marley::TabulatedNuclearReaction::create_event( int pdg_a,
   double stl = marley_utils::real_sqrt( 1. - std::pow(ctl, 2) );
 
   // Get the ejectile total energy and momentum using the sampled energy
-  // transfer
-  double Ec = Ea - w;
+  // transfer and the effective energy shift
+  double w_eff = w - xsec_->Delta();
+  double Ec = Ea - w_eff;
   double pc = marley_utils::real_sqrt( Ec*Ec - mc_*mc_ );
 
   // Determine the Cartesian components of the ejectile's lab-frame momentum

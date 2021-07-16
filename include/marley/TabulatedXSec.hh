@@ -36,9 +36,20 @@ namespace marley {
 
       explicit TabulatedXSec( int target_pdg,
         marley::Reaction::ProcessType p_type,
-        marley::CoulombCorrector::CoulombMode mode );
+        marley::CoulombCorrector::CoulombMode mode, double Delta );
 
       void add_table( const std::string& file_name );
+
+      /// @brief Get the shift used to compute the effective energy transfer
+      double Delta() const;
+
+      /// @brief Returns true if this cross section represents a CC process
+      /// or false otherwise
+      inline bool is_cc() const  {
+        bool is_cc = ( proc_type_ == marley::Reaction::ProcessType::NeutrinoCC
+          || proc_type_ == marley::Reaction::ProcessType::AntiNeutrinoCC );
+        return is_cc;
+      }
 
       /// @brief Simple struct representing a given multipole order, e.g., 2+
       struct MultipoleLabel {
@@ -169,6 +180,11 @@ namespace marley {
       /// Storage for interpolating functions used to optimize calculations
       /// requiring numerical integration
       std::map< OptimizationMapKey, OptimizationMapValue > optimization_map_;
+
+      /// Effective shift in the energy transfer that accounts for the mass
+      /// difference between the ground state of the initial nucleus and the
+      /// isobaric analog state in the daughter nucleus
+      double Delta_;
   };
 
 }

@@ -35,8 +35,9 @@ namespace {
 }
 
 marley::TabulatedXSec::TabulatedXSec( int target_pdg,
-  marley::Reaction::ProcessType p_type, CoulombCorrector::CoulombMode mode )
-  : ta_( target_pdg ), proc_type_( p_type ), coulomb_mode_( mode )
+  marley::Reaction::ProcessType p_type, CoulombCorrector::CoulombMode mode,
+  double Delta ) : ta_( target_pdg ), proc_type_( p_type ),
+  coulomb_mode_( mode ), Delta_( Delta )
 {
   // Set the residue PDG code (pdg_d_) based on the input information
   int dummy_charge;
@@ -151,7 +152,7 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   double ma = mt.get_particle_mass( pdg_a );
   double mc = mt.get_particle_mass( pdg_c );
 
-  // Determine their total energies and momenta
+  // Determine the total energies and momenta of the initial and final leptons
   double Ea = KEa + ma;
   double pa = marley_utils::real_sqrt( Ea*Ea - ma*ma );
   double Ec = Ea - omega;
@@ -169,35 +170,21 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   // multipole
   const auto& rt = this->responses_.at( ml );
 
-  // For CC interactions, apply an energy shift to account for the difference
-  // in energy between the ground state of the initial nucleus and the
-  // isobaric analog state in the final nucleus. This leads to an effective
-  // energy transfer value omega_eff which is used when evaluating the
-  // nuclear response functions.
-  double omega_eff = omega;
-  bool is_cc = ( proc_type_ == marley::Reaction::ProcessType::NeutrinoCC
-    || proc_type_ == marley::Reaction::ProcessType::AntiNeutrinoCC );
-
-  // TODO: apply energy shift
-  //if ( is_cc ) {
-  //  omega_eff -= Delta_;
-  //}
-
-  // Interpolate a set of nuclear responses for the given omega_eff and q
-  // values
-  if ( omega_eff < rt.w_min() || omega_eff > rt.w_max()
+  // Interpolate a set of nuclear responses for the given omega and q values
+  if ( omega < rt.w_min() || omega > rt.w_max()
     || q < rt.q_min() || q > rt.q_max() ) return 0.;
-  auto nr = rt.interpolate( omega_eff, q );
+  auto nr = rt.interpolate( omega, q );
 
   // Compute the lepton factors
   double beta = pc / Ec;
-  double sin_theta2 = marley_utils::real_sqrt( 1. - cos_theta*cos_theta );
+  //double sin_theta2 = marley_utils::real_sqrt( 1. - cos_theta*cos_theta );
+  double sin_theta2 = 1. - cos_theta*cos_theta;
   double q2 = q*q;
   double vcc = 1. + beta * cos_theta;
   double vll = vcc - 2.*Ea*Ec*sin_theta2/q2;
   double vcl = -2. * ( omega*vcc/q + mc*mc/Ec/q );
   double vT = 1. - beta*cos_theta + Ea*Ec*beta*beta*sin_theta2/q2;
-  double vTprime = -2. * helicity * ( (Ea + Ec)*(1 - beta*cos_theta)/q
+  double vTprime = 2. * helicity * ( (Ea + Ec)*(1 - beta*cos_theta)/q
     - mc*mc/q/Ec );
   LeptonFactors lf( vcc, vll, vcl, vT, vTprime );
 
@@ -208,7 +195,9 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
 
   // For CC cross sections, apply the appropriate correction factor for
   // Coulomb corrections based on the active "Coulomb mode"
-  if ( is_cc ) {
+  bool is_charged_current = this->is_cc();
+
+  if ( is_charged_current ) {
 
     // Get the mass of the atomic target
     double mb = mt.get_atomic_mass( ta_.pdg() );
@@ -281,9 +270,10 @@ double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
 
     // Get the energy transfer at the current grid point
     double w = wvec.at( iw );
+    double w_eff = w - Delta_;
 
     // Use it to compute the ejectile total energy, etc.
-    double Ec = Ea - w;
+    double Ec = Ea - w_eff;
     // We can skip unphysical terms for which the total energy is smaller than
     // the final lepton mass
     if ( Ec < mc ) continue;
@@ -445,4 +435,17 @@ void marley::TabulatedXSec::optimize( int pdg_a, double max_KEa ) {
 
     optimization_map_.emplace( std::make_pair(key, value) );
   }
+}
+
+// For CC interactions, apply an energy shift to account for the difference in
+// energy between the ground state of the initial nucleus and the isobaric
+// analog state in the final nucleus. This leads to an effective energy
+// transfer value omega_eff which is used when evaluating the final-state
+// lepton energy.
+double marley::TabulatedXSec::Delta() const {
+  bool is_charged_current = this->is_cc();
+
+  double result = 0.;
+  if ( is_charged_current ) result = Delta_;
+  return result;
 }
