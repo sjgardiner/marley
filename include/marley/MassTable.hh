@@ -40,6 +40,10 @@ namespace marley {
       /// @brief Deleted move assignment operator
       MassTable& operator=(MassTable&&) = delete;
 
+      /// @brief Get a non-const reference to the singleton instance of the
+      /// MassTable
+      static MassTable& NonConstInstance();
+
       /// @brief Get a const reference to the singleton instance of the
       /// MassTable
       static const MassTable& Instance();
@@ -48,6 +52,13 @@ namespace marley {
       /// @param pdg_code PDG code identifying the type of particle
       /// @return %Particle mass (MeV)
       double get_particle_mass(int pdg_code) const;
+
+      /// @brief Set the mass of a particle
+      /// @param pdg_code PDG code identifying the type of particle
+      /// @param mass Particle mass (MeV)
+      /// @note The particle masses are stored internally using micro-amu,
+      /// but for user convenience this function takes a mass in MeV.
+      void set_particle_mass( int pdg_code, double mass );
 
       /// @brief Get the mass of an atom
       /// @param pdg_code PDG code identifying the nucleus of the atom

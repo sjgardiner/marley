@@ -76,6 +76,10 @@ const marley::MassTable& marley::MassTable::Instance() {
   return *the_instance;
 }
 
+marley::MassTable& marley::MassTable::NonConstInstance() {
+  return const_cast< marley::MassTable& >( marley::MassTable::Instance() );
+}
+
 double marley::MassTable::liquid_drop_model_atomic_mass(int Z, int A) const {
   return liquid_drop_model_mass_excess(Z, A) + micro_amu_*1e6*A;
 }
@@ -340,4 +344,12 @@ void marley::MassTable::assign_masses(const marley::JSON& obj_array,
     map_to_use[ pdg ] = mass;
   }
 
+}
+
+void marley::MassTable::set_particle_mass( int pdg_code, double mass ) {
+  // Convert the input mass (assumed to be in MeV) into micro-amu to match
+  // the convention for internal storage in the MassTable class
+  this->particle_masses_[ pdg_code ] = mass / marley_utils::micro_amu;
+  MARLEY_LOG_INFO() << "Set " << marley_utils::get_particle_symbol( pdg_code )
+    << " mass to " << mass << " MeV";
 }
