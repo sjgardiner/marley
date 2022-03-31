@@ -53,6 +53,10 @@ namespace marley_utils {
   constexpr int HELION = 1000020030;
   constexpr int ALPHA = 1000020040;
 
+  // Non-standard particle IDs
+  // Fermionic dark matter (as in https://arxiv.org/abs/1908.10861)
+  constexpr int FERMIONIC_DM = 42;
+
   // Dummy double value representing an unknown maximum PDF value. Signals to
   // marley::Generator::rejection_sample that it needs to search for the
   // maximum before doing the sampling.
@@ -457,6 +461,7 @@ namespace marley_utils {
     { 15, "\u03C4" },
     { 16, "\u03BD\u03C4" },
     { 22, "\u03B3" },
+    { 42, "\u03C7" }, // fermionic dark matter
     { 2112, "n" },
     { 2212, "p" },
     { 1000010020, "d" },
@@ -475,6 +480,7 @@ namespace marley_utils {
     { 15,  -1 },
     { 16,   0 },
     { 22,   0 },
+    { 42,   0 }, // Fermionic dark matter
     { 2112, 0 },
     { 2212, 1 }
   };

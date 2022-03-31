@@ -47,7 +47,8 @@ namespace marley {
         NeutrinoCC = 0,     ///< Nuclear matrix elements contain @f$ t_{-} @f$
         AntiNeutrinoCC = 1, ///< Nuclear matrix elements contain @f$ t_{+} @f$
         NC = 2,             ///< Nuclear matrix elements contain @f$ t_{3} @f$
-        NuElectronElastic = 3 ///< Neutrino-electron elastic scattering
+        NuElectronElastic = 3, ///< Neutrino-electron elastic scattering
+        DMCC = 4, ///< Fermionic dark matter absorption (analog of NeutrinoCC)
       };
 
       /// @brief Compute the reaction's total cross section (MeV<sup> -2</sup>)

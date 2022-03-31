@@ -262,6 +262,10 @@ marley::Generator marley::JSONConfig::create_generator() const
       {
         proc_type_str = "ES on " + ta.to_string();
       }
+      else if ( r->process_type() == ProcType::DMCC )
+      {
+        proc_type_str = "DM CC";
+      }
       else throw marley::Error("Unrecognized process type encountered in"
         " marley::JSONConfig::prepare_reactions()");
 

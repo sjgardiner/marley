@@ -494,6 +494,7 @@ bool marley_utils::string_to_neutrino_pdg(const std::string& str, int& pdg) {
   else if (str == "vubar") pdg = marley_utils::MUON_ANTINEUTRINO;
   else if (str == "vt") pdg = marley_utils::TAU_NEUTRINO;
   else if (str == "vtbar") pdg = marley_utils::TAU_ANTINEUTRINO;
+  else if (str == "dm") pdg = marley_utils::FERMIONIC_DM;
   else {
     pdg = 0;
     return false;

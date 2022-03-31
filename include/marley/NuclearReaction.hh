@@ -48,9 +48,12 @@ namespace marley {
       /// represented by this NuclearReaction object
       /// @param mat_els A vector of MatrixElement objects that should
       /// be used to compute cross sections for this NuclearReaction
+      /// @param lambda_dmcc Value of the coupling constant (MeV) to
+      /// use for the DMCC process
       NuclearReaction(ProcessType pt, int pdg_a, int pdg_b, int pdg_c,
         int pdg_d, int q_d,
-        const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els);
+        const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els,
+        double lambda_dmcc = 0.);
 
       /// @brief Enumerated type used to set the method for handling Coulomb
       /// corrections for CC nuclear reactions
@@ -241,6 +244,9 @@ namespace marley {
       /// @brief Matrix elements representing all of the possible nuclear
       /// transitions that may be caused by this reaction
       std::shared_ptr< std::vector<marley::MatrixElement> > matrix_elements_;
+
+      /// @brief Coupling constant used only for the DMCC process type
+      double lambda_dmcc_ = 0.;
   };
 
 }

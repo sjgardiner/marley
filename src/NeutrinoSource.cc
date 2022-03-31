@@ -35,7 +35,8 @@ const std::set<int> marley::NeutrinoSource::pids_ = {
   marley_utils::MUON_NEUTRINO,
   marley_utils::MUON_ANTINEUTRINO,
   marley_utils::TAU_NEUTRINO,
-  marley_utils::TAU_ANTINEUTRINO
+  marley_utils::TAU_ANTINEUTRINO,
+  marley_utils::FERMIONIC_DM
 };
 
 double marley::NeutrinoSource::sample_incident_neutrino(int& pdg,

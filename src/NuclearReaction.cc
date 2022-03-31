@@ -64,8 +64,9 @@ namespace {
 
 marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
   int pdg_c, int pdg_d, int q_d,
-  const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els)
-  : q_d_( q_d ), matrix_elements_( mat_els )
+  const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els,
+  double lambda_dmcc)
+  : q_d_( q_d ), matrix_elements_( mat_els ), lambda_dmcc_( lambda_dmcc )
 {
   // Initialize the process type (NC, neutrino/antineutrino CC)
   process_type_ = pt;
@@ -264,9 +265,29 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
   // Determine the CM frame velocity of the ejectile
   double beta_c_cm = pc_cm / Ec_cm;
 
+  // For a massive projectile, the angular distributions depend on the product
+  // of the two speeds rather than just the speed of the ejectile. To avoid
+  // needing to refactor the call to sample_cos_theta_c_cm() below, we can
+  // cheat by doing the multiplication here. For massless projectiles, nothing
+  // changes since they have beta = 1.
+
+  // Determine the CM frame speed of the projectile. We actually need to do the
+  // calculation only for massive projectiles.
+  double beta_a_cm = 1.;
+  if ( ma_ > 0. ) {
+    // Projectile total energy
+    double Ea_cm = ( s + ma_*ma_ - mb_*mb_ ) / ( 2 * std::sqrt(s) );
+
+    // Projectile momentum
+    double pa_cm = marley_utils::real_sqrt( std::pow(Ea_cm, 2) - ma_*ma_ );
+
+    // Projectile speed
+    beta_a_cm = pa_cm / Ea_cm;
+  }
+
   // Sample a CM frame scattering cosine for the ejectile.
   double cos_theta_c_cm = sample_cos_theta_c_cm( sampled_matrix_el,
-    beta_c_cm, gen );
+    beta_a_cm * beta_c_cm, gen );
 
   // Sample a CM frame azimuthal scattering angle (phi) uniformly on [0, 2*pi).
   // We can do this because the matrix elements are azimuthally invariant
@@ -517,8 +538,8 @@ double marley::NuclearReaction::total_xs(const marley::MatrixElement& me,
 
   // Common factors for the allowed approximation total cross sections
   // for both CC and NC reactions
-  double total_xsec = (marley_utils::GF2 / marley_utils::pi)
-    * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm * me.strength();
+  double total_xsec = ( Eb_cm * Ed_cm / s ) * Ec_cm
+    * pc_cm * me.strength() / marley_utils::pi;
 
   // Apply extra factors based on the current process type
   if ( process_type_ == ProcessType::NeutrinoCC
@@ -527,7 +548,7 @@ double marley::NuclearReaction::total_xs(const marley::MatrixElement& me,
     // Calculate a Coulomb correction factor using either a Fermi function
     // or the effective momentum approximation
     double factor_C = coulomb_correction_factor( beta_rel_cd );
-    total_xsec *= marley_utils::Vud2 * factor_C;
+    total_xsec *= marley_utils::GF2 * marley_utils::Vud2 * factor_C;
   }
   else if ( process_type_ == ProcessType::NC )
   {
@@ -535,8 +556,21 @@ double marley::NuclearReaction::total_xs(const marley::MatrixElement& me,
     // correspond to CEvNS since they can only access the nuclear ground state)
     if ( me.type() == ME_Type::FERMI ) {
       double Q_w = weak_nuclear_charge();
-      total_xsec *= 0.25*std::pow(Q_w, 2);
+      total_xsec *= 0.25 * std::pow(Q_w, 2) * marley_utils::GF2;
     }
+  }
+  else if ( process_type_ == ProcessType::DMCC ) {
+
+    // Compute CM frame projectile total energy, momentum, and speed. We need
+    // the last of these when computing the cross section for a massive
+    // projectile
+    double Ea_cm = ( s + ma_*ma_ - mb_*mb_ ) / ( 2. * sqrt_s );
+    double pa_cm = marley_utils::real_sqrt( std::pow(Ea_cm, 2) - ma_*ma_);
+    double beta_a_cm = pa_cm / Ea_cm;
+
+    double factor_C = coulomb_correction_factor( beta_rel_cd );
+
+    total_xsec *= factor_C / ( 2. * beta_a_cm * std::pow(lambda_dmcc_, 4) );
   }
   else throw marley::Error("Unrecognized process type encountered in"
     " marley::NuclearReaction::total_xs()");

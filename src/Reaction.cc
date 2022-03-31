@@ -40,6 +40,7 @@ namespace {
     { ProcType::AntiNeutrinoCC, "anti-\u03BD CC" },
     { ProcType::NC, "NC" },
     { ProcType::NuElectronElastic, "(anti-)\u03BD + e\u207B ES" },
+    { ProcType::DMCC, "\u03C7 CC" },
   };
 
   // Defines the neutrino species that can participate in each type
@@ -63,6 +64,8 @@ namespace {
         { ELECTRON_NEUTRINO, MUON_NEUTRINO, TAU_NEUTRINO,
           ELECTRON_ANTINEUTRINO, MUON_ANTINEUTRINO, TAU_ANTINEUTRINO }
     },
+
+    { ProcType::DMCC, { FERMIONIC_DM } },
 
   };
 
@@ -266,6 +269,7 @@ int marley::Reaction::get_ejectile_pdg(int pdg_a, ProcType proc_type) {
     else if ( proc_type == ProcType::AntiNeutrinoCC ) pdg_c = pdg_a + 1;
     else if ( proc_type == ProcType::NC ) pdg_c = pdg_a;
     else if ( proc_type == ProcType::NuElectronElastic ) pdg_c = pdg_a;
+    else if ( proc_type == ProcType::DMCC ) pdg_c = ELECTRON;
     else throw marley::Error("Unrecognized ProcessType encountered in"
       " marley::Reaction::get_ejectile_pdg()");
   }
@@ -346,6 +350,20 @@ std::vector< std::unique_ptr<marley::Reaction> >
     return loaded_reactions;
   }
 
+  // For fermionic dark matter absorption, the DM particle mass and coupling
+  // constant Lambda (for the DMCC process) are specified in the reaction
+  // file immediately after the ProcessType identifier
+  double lambda_dmcc = 0.;
+  if ( proc_type == ProcessType::DMCC ) {
+    double mass_dm;
+    iss >> mass_dm >> lambda_dmcc;
+
+    // Add a new entry to the singleton MassTable for the DM particle.
+    // Note that we use a non-const reference so that this may be done.
+    marley::MassTable& mt = marley::MassTable::NonConstInstance();
+    mt.set_particle_mass( FERMIONIC_DM, mass_dm );
+  }
+
   // For nuclear reaction modes, there is a single target nucleus PDG code
   // per file. After parsing it, we proceed to read in the matrix elements.
   int pdg_b;
@@ -410,8 +428,11 @@ std::vector< std::unique_ptr<marley::Reaction> >
     pdg_d = pdg_b;
     q_d = 0;
   }
-  // Neutrino CC scattering raises Z by one
-  else if ( proc_type == ProcessType::NeutrinoCC ) {
+  // Neutrino CC scattering raises Z by one, as does fermionic dark matter
+  // absorption via induced beta-minus decay
+  else if ( proc_type == ProcessType::NeutrinoCC
+    || proc_type == ProcessType::DMCC )
+  {
     // Check that the neutron number of the target is positive
     int Ni = A - Zi;
     if ( Ni <= 0 ) throw marley::Error("A NeutrinoCC process requires"
@@ -446,7 +467,14 @@ std::vector< std::unique_ptr<marley::Reaction> >
     int pdg_c = get_ejectile_pdg(pdg_a, proc_type);
 
     loaded_reactions.emplace_back( std::make_unique<marley::NuclearReaction>(
-      proc_type, pdg_a, pdg_b, pdg_c, pdg_d, q_d, matrix_elements) );
+      proc_type, pdg_a, pdg_b, pdg_c, pdg_d, q_d, matrix_elements,
+      lambda_dmcc) );
+
+    if ( proc_type == ProcessType::DMCC ) {
+      MARLEY_LOG_INFO() << "Set coupling constant for "
+        << loaded_reactions.back()->get_description() << " to \u039B = "
+        << lambda_dmcc << " MeV";
+    }
   }
 
   return loaded_reactions;
