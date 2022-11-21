@@ -155,7 +155,7 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
   // Determine the total energies and momenta of the initial and final leptons
   double Ea = KEa + ma;
   double pa = marley_utils::real_sqrt( Ea*Ea - ma*ma );
-  double Ec = Ea - omega;
+  double Ec = Ea - omega + this->Delta();
   if ( Ec < mc ) return 0.;
 
   double pc = marley_utils::real_sqrt( Ec*Ec - mc*mc );
@@ -177,11 +177,10 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
 
   // Compute the lepton factors
   double beta = pc / Ec;
-  //double sin_theta2 = marley_utils::real_sqrt( 1. - cos_theta*cos_theta );
   double sin_theta2 = 1. - cos_theta*cos_theta;
   double q2 = q*q;
   double vcc = 1. + beta * cos_theta;
-  double vll = vcc - 2.*Ea*Ec*sin_theta2/q2;
+  double vll = vcc - 2.*Ea*Ec*sin_theta2*beta*beta/q2;
   double vcl = -2. * ( omega*vcc/q + mc*mc/Ec/q );
   double vT = 1. - beta*cos_theta + Ea*Ec*beta*beta*sin_theta2/q2;
   double vTprime = 2. * helicity * ( (Ea + Ec)*(1 - beta*cos_theta)/q
