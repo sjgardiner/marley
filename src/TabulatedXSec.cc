@@ -205,7 +205,7 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
     double Ed = omega + mb;
 
     // Mass of the residue (via 3-momentum conservation)
-    double md = Ed*Ed - q*q;
+    double md = marley_utils::real_sqrt( Ed*Ed - q*q );
 
     // Dot product of the 4-momenta of the ejectile and residue
     double pc_dot_pd = Ec*Ed + pc*pc - pa*pc*cos_theta;

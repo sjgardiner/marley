@@ -73,7 +73,7 @@ marley::CoulombCorrector::CoulombCorrector( int pdg_c,
   // Do a sanity check that the ejectile is actually a charged (anti)lepton. If
   // it's not, then set the Coulomb mode to NO_CORRECTION to prevent misuse
   // of this object.
-  if ( is_charged_lepton_or_antilepton(pdg_c_) ) {
+  if ( !is_charged_lepton_or_antilepton(pdg_c_) ) {
     coulomb_mode_ = CoulombMode::NO_CORRECTION;
   }
 }
