@@ -228,9 +228,8 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
 double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
   const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max )
 {
-  // Set the maximum differential cross section to minus infinity
-  // to start
-  diff_max = marley_utils::minus_infinity;
+  // Set the maximum differential cross section to zero to start
+  diff_max = 0.;
 
   // Get the table of nuclear responses for the requested multipole
   const auto& rt = this->responses_.at( ml );
@@ -341,6 +340,12 @@ double marley::TabulatedXSec::integral( int pdg_a, double KEa,
     else if ( KEa <= tot.x_max() ) {
       double tot_xsec = omv.tot_xsec_.evaluate( KEa );
       diff_max = omv.max_diff_xsec_.evaluate( KEa );
+
+      // Ensure that interpolation problems will not give us a negative value
+      // for the total or maximum differential cross sections
+      tot_xsec = std::max( 0., tot_xsec );
+      diff_max = std::max( 0., diff_max );
+
       return tot_xsec;
     }
   }

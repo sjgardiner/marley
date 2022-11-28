@@ -135,8 +135,6 @@ marley::Event marley::TabulatedNuclearReaction::create_event( int pdg_a,
     ctl = gen.uniform_random_double( -1., 1., true );
     diff = xsec_->diff_xsec( pdg_a_, KEa, w, ctl, sampled_ml );
     y = gen.uniform_random_double( 0., diff_max, true );
-    if ( y > diff_max ) MARLEY_LOG_WARNING() << "Crap! y = " << y
-      << ", diff_max = " << diff_max;
   } while ( y > diff );
 
   // Sample a lab-frame azimuthal scattering angle uniformly
