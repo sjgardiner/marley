@@ -23,7 +23,6 @@
 #include "marley/marley_utils.hh"
 #include "marley/AllowedNuclearReaction.hh"
 #include "marley/Error.hh"
-#include "marley/Event.hh"
 #include "marley/Generator.hh"
 #include "marley/Level.hh"
 #include "marley/Logger.hh"
@@ -48,8 +47,8 @@ marley::AllowedNuclearReaction::AllowedNuclearReaction( ProcType pt,
 
 // Creates an event object by sampling the appropriate quantities and
 // performing kinematic calculations
-marley::Event marley::AllowedNuclearReaction::create_event( int pdg_a,
-  double KEa, marley::Generator& gen ) const
+std::shared_ptr< HepMC3::GenEvent > marley::AllowedNuclearReaction
+  ::create_event( int pdg_a, double KEa, marley::Generator& gen ) const
 {
   // Check that the projectile supplied to this event is correct. If not, alert
   // the user that this event does not use the requested projectile.
@@ -65,7 +64,8 @@ marley::Event marley::AllowedNuclearReaction::create_event( int pdg_a,
     + " MeV is below the threshold value " + std::to_string(KEa_threshold_)
     + " MeV.");
 
-  /// @todo Add more error checks to AllowedNuclearReaction::create_event as necessary
+  /// @todo Add more error checks to AllowedNuclearReaction::create_event() as
+  /// necessary
 
   // Create an empty vector of sampling weights (partial total cross
   // sections to each kinematically accessible final level)
@@ -81,11 +81,12 @@ marley::Event marley::AllowedNuclearReaction::create_event( int pdg_a,
   // level, and save the results in the level_weights vector (which will be
   // cleared by summed_xs_helper() before being loaded with the cross sections).
   // The summed_xs_helper() method can also be used for differential
-  // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy cos_theta_c_cm
-  // value and request total cross sections by setting the last argument to false.
+  // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy
+  // cos_theta_c_cm value and request total cross sections by setting the last
+  // argument to false.
   double dummy = 0.;
-  double sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dummy,
-    &level_weights, false);
+  double sum_of_xsecs = summed_xs_helper( pdg_a, KEa, dummy,
+    &level_weights, false );
 
   // Note that the elements in matrix_elements_ are given in order of
   // increasing excitation energy (this is currently enforced by the reaction
@@ -96,21 +97,21 @@ marley::Event marley::AllowedNuclearReaction::create_event( int pdg_a,
 
   // Complain if none of the levels we have data for are kinematically allowed
   if ( level_weights.empty() ) {
-    throw marley::Error("Could not create this event. The DecayScheme object"
+    throw marley::Error( "Could not create this event. The DecayScheme object"
       " associated with this reaction does not contain data for any"
       " kinematically accessible levels for a projectile kinetic energy of "
-      + std::to_string(KEa) + " MeV (max E_level = "
-      + std::to_string( max_level_energy(KEa) ) + " MeV).");
+      + std::to_string( KEa ) + " MeV (max E_level = "
+      + std::to_string( max_level_energy(KEa) ) + " MeV)." );
   }
 
   // Complain if the total cross section (the sum of all partial level cross
   // sections) is zero or negative (the latter is just to cover all possibilities).
   if ( sum_of_xsecs <= 0. ) {
-    throw marley::Error("Could not create this event. All kinematically"
+    throw marley::Error( "Could not create this event. All kinematically"
       " accessible levels for a projectile kinetic energy of "
-      + std::to_string(KEa) + " MeV (max E_level = "
+      + std::to_string( KEa ) + " MeV (max E_level = "
       + std::to_string( max_level_energy(KEa) )
-      + " MeV) have vanishing matrix elements.");
+      + " MeV) have vanishing matrix elements." );
   }
 
   // Create a list of parameters used to supply the weights to our discrete
@@ -233,7 +234,7 @@ marley::Event marley::AllowedNuclearReaction::create_event( int pdg_a,
 
   // Create the preliminary event object (after 2-->2 scattering, but before
   // de-excitation of the residual nucleus)
-  marley::Event event = make_event_object( KEa, pc_cm, cos_theta_c_cm, phi_c_cm,
+  auto event = this->make_event_object( KEa, pc_cm, cos_theta_c_cm, phi_c_cm,
     Ec_cm, Ed_cm, E_level, twoJ, P );
 
   // Return the preliminary event object (to be processed later by the
@@ -241,27 +242,28 @@ marley::Event marley::AllowedNuclearReaction::create_event( int pdg_a,
   return event;
 }
 
-// Compute the total reaction cross section (summed over all final nuclear levels)
-// in units of MeV^(-2) using the center of momentum frame.
-double marley::AllowedNuclearReaction::total_xs(int pdg_a, double KEa) const {
+// Compute the total reaction cross section (summed over all final nuclear
+// levels) in units of MeV^(-2) using the center of momentum frame.
+double marley::AllowedNuclearReaction::total_xs( int pdg_a, double KEa ) const
+{
   double dummy_cos_theta = 0.;
-  return summed_xs_helper(pdg_a, KEa, dummy_cos_theta, nullptr, false);
+  return summed_xs_helper( pdg_a, KEa, dummy_cos_theta, nullptr, false );
 }
 
 // Compute the differential cross section d\sigma / d\cos\theta_c^{CM}
 // summed over all final nuclear levels. This is done in units of MeV^(-2)
 // using the center of momentum frame.
-double marley::AllowedNuclearReaction::diff_xs(int pdg_a, double KEa,
-  double cos_theta_c_cm) const
+double marley::AllowedNuclearReaction::diff_xs( int pdg_a, double KEa,
+  double cos_theta_c_cm ) const
 {
-  return summed_xs_helper(pdg_a, KEa, cos_theta_c_cm, nullptr, true);
+  return summed_xs_helper( pdg_a, KEa, cos_theta_c_cm, nullptr, true );
 }
 
 // Compute the differential cross section d\sigma / d\cos\theta_c^{CM} for a
 // transition to a particular final nuclear level. This is done in units of
 // MeV^(-2) using the center of momentum frame.
-double marley::AllowedNuclearReaction::diff_xs(const marley::MatrixElement& mat_el,
-  double KEa, double cos_theta_c_cm) const
+double marley::AllowedNuclearReaction::diff_xs(
+  const marley::MatrixElement& mat_el, double KEa, double cos_theta_c_cm ) const
 {
   // Check that the scattering cosine is within the physically meaningful range
   if ( std::abs(cos_theta_c_cm) > 1. ) return 0.;
@@ -272,15 +274,15 @@ double marley::AllowedNuclearReaction::diff_xs(const marley::MatrixElement& mat_
 }
 
 // Helper function for total_xs and diff_xs()
-double marley::AllowedNuclearReaction::summed_xs_helper(int pdg_a, double KEa,
-  double cos_theta_c_cm, std::vector<double>* level_xsecs, bool differential)
+double marley::AllowedNuclearReaction::summed_xs_helper( int pdg_a, double KEa,
+  double cos_theta_c_cm, std::vector<double>* level_xsecs, bool differential )
   const
 {
   // Check that the projectile supplied to this event is correct. If not,
   // return a total cross section of zero since this reaction is not available
   // for the given projectile.
   /// @todo Consider whether you should use an exception if pdg_a != pdg_a_
-  if (pdg_a != pdg_a_) return 0.;
+  if ( pdg_a != pdg_a_ ) return 0.;
 
   // If we're evaluating a differential cross section, check that the
   // scattering cosine is within the physically meaningful range. If it's
@@ -347,8 +349,9 @@ double marley::AllowedNuclearReaction::summed_xs_helper(int pdg_a, double KEa,
 
 // Compute the total reaction cross section (in MeV^(-2)) for a transition to a
 // particular nuclear level using the center of momentum frame
-double marley::AllowedNuclearReaction::total_xs(const marley::MatrixElement& me,
-  double KEa, double& beta_c_cm, bool check_max_E_level) const
+double marley::AllowedNuclearReaction::total_xs(
+  const marley::MatrixElement& me, double KEa, double& beta_c_cm,
+  bool check_max_E_level ) const
 {
   // Don't bother to compute anything if the matrix element vanishes for this
   // level
@@ -365,17 +368,17 @@ double marley::AllowedNuclearReaction::total_xs(const marley::MatrixElement& me,
 
   // The final nuclear mass (before nuclear de-excitations) is the sum of the
   // ground state residue mass plus the excitation energy of the accessed level
-  double md2 = std::pow(md_gs_ + me.level_energy(), 2);
+  double md2 = std::pow( md_gs_ + me.level_energy(), 2 );
 
   // Compute Mandelstam s (the square of the total CM frame energy)
-  double s = std::pow(ma_ + mb_, 2) + 2.*mb_*KEa;
-  double sqrt_s = std::sqrt(s);
+  double s = std::pow( ma_ + mb_, 2 ) + 2.*mb_*KEa;
+  double sqrt_s = std::sqrt( s );
 
   // Compute CM frame total energies for two of the particles. Also
   // compute the magnitude of the ejectile CM frame momentum.
-  double Eb_cm = (s + mb_*mb_ - ma_*ma_) / (2. * sqrt_s);
-  double Ec_cm = (s + mc_*mc_ - md2) / (2. * sqrt_s);
-  double pc_cm = marley_utils::real_sqrt(std::pow(Ec_cm, 2) - mc_*mc_);
+  double Eb_cm = ( s + mb_*mb_ - ma_*ma_ ) / ( 2. * sqrt_s );
+  double Ec_cm = ( s + mc_*mc_ - md2 ) / ( 2. * sqrt_s );
+  double pc_cm = marley_utils::real_sqrt( std::pow(Ec_cm, 2) - mc_*mc_ );
 
   // Compute the (dimensionless) speed of the ejectile in the CM frame
   beta_c_cm = pc_cm / Ec_cm;
@@ -384,16 +387,16 @@ double marley::AllowedNuclearReaction::total_xs(const marley::MatrixElement& me,
   double Ed_cm = sqrt_s - Ec_cm;
 
   // Dot product of the four-momenta of particles c and d
-  double pc_dot_pd = Ed_cm*Ec_cm + std::pow(pc_cm, 2);
+  double pc_dot_pd = Ed_cm*Ec_cm + std::pow( pc_cm, 2 );
 
   // Relative speed of particles c and d, computed with a manifestly
   // Lorentz-invariant expression
   double beta_rel_cd = marley_utils::real_sqrt(
-    std::pow(pc_dot_pd, 2) - mc_*mc_*md2) / pc_dot_pd;
+    std::pow(pc_dot_pd, 2) - mc_*mc_*md2 ) / pc_dot_pd;
 
   // Common factors for the allowed approximation total cross sections
   // for both CC and NC reactions
-  double total_xsec = (marley_utils::GF2 / marley_utils::pi)
+  double total_xsec = ( marley_utils::GF2 / marley_utils::pi )
     * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm * me.strength();
 
   // Apply extra factors based on the current process type
@@ -412,11 +415,11 @@ double marley::AllowedNuclearReaction::total_xs(const marley::MatrixElement& me,
     // correspond to CEvNS since they can only access the nuclear ground state)
     if ( me.type() == ME_Type::FERMI ) {
       double Q_w = weak_nuclear_charge();
-      total_xsec *= 0.25*std::pow(Q_w, 2);
+      total_xsec *= 0.25*std::pow( Q_w, 2 );
     }
   }
-  else throw marley::Error("Unrecognized process type encountered in"
-    " marley::AllowedNuclearReaction::total_xs()");
+  else throw marley::Error( "Unrecognized process type encountered in"
+    " marley::AllowedNuclearReaction::total_xs()" );
 
   return total_xsec;
 }
@@ -424,7 +427,7 @@ double marley::AllowedNuclearReaction::total_xs(const marley::MatrixElement& me,
 // Sample an ejectile scattering cosine in the CM frame.
 double marley::AllowedNuclearReaction::sample_cos_theta_c_cm(
   const marley::MatrixElement& matrix_el, double beta_c_cm,
-  marley::Generator& gen) const
+  marley::Generator& gen ) const
 {
   // To avoid wasting time searching for the maximum of these distributions
   // for rejection sampling, set the maximum to the known value before
@@ -432,11 +435,11 @@ double marley::AllowedNuclearReaction::sample_cos_theta_c_cm(
   double max;
   if ( matrix_el.type() == ME_Type::FERMI ) {
     // B(F)
-    max = matrix_el.cos_theta_pdf(1., beta_c_cm);
+    max = matrix_el.cos_theta_pdf( 1., beta_c_cm );
   }
-  else if (matrix_el.type() == ME_Type::GAMOW_TELLER) {
+  else if ( matrix_el.type() == ME_Type::GAMOW_TELLER ) {
     // B(GT)
-    max = matrix_el.cos_theta_pdf(-1., beta_c_cm);
+    max = matrix_el.cos_theta_pdf( -1., beta_c_cm );
   }
   else throw marley::Error("Unrecognized matrix element type "
     + std::to_string(matrix_el.type()) + " encountered while sampling a"
@@ -445,23 +448,20 @@ double marley::AllowedNuclearReaction::sample_cos_theta_c_cm(
   // Sample a CM frame scattering cosine using the appropriate distribution for
   // this matrix element.
   return gen.rejection_sample(
-    [&matrix_el, &beta_c_cm](double cos_theta_c_cm)
-    -> double { return matrix_el.cos_theta_pdf(cos_theta_c_cm, beta_c_cm); },
-    -1., 1., max);
+    [ &matrix_el, &beta_c_cm ]( double cos_theta_c_cm )
+    -> double { return matrix_el.cos_theta_pdf( cos_theta_c_cm, beta_c_cm ); },
+    -1., 1., max );
 }
 
-marley::Event marley::AllowedNuclearReaction::make_event_object(double KEa,
-  double pc_cm, double cos_theta_c_cm, double phi_c_cm, double Ec_cm,
-  double Ed_cm, double E_level, int twoJ, const marley::Parity& P) const
+std::shared_ptr< HepMC3::GenEvent > marley::AllowedNuclearReaction
+  ::make_event_object( double KEa, double pc_cm, double cos_theta_c_cm,
+  double phi_c_cm, double Ec_cm, double Ed_cm, double E_level, int twoJ,
+  const marley::Parity& P ) const
 {
-  marley::Event event = marley::Reaction::make_event_object(KEa, pc_cm,
-    cos_theta_c_cm, phi_c_cm, Ec_cm, Ed_cm, E_level, twoJ, P);
+  auto event = marley::Reaction::make_event_object( KEa, pc_cm,
+    cos_theta_c_cm, phi_c_cm, Ec_cm, Ed_cm, E_level, twoJ, P );
 
-  // Assume that the target is a neutral atom (q_b = 0)
-  event.target().set_charge(0);
-
-  // Assign the correct charge to the residue
-  event.residue().set_charge(q_d_);
+  this->set_charge_attributes( event );
 
   return event;
 }

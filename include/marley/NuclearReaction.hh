@@ -51,10 +51,6 @@ namespace marley {
       inline virtual marley::TargetAtom atomic_target() const override final
         { return marley::TargetAtom( pdg_b_ ); }
 
-      /// Produces a two-two scattering Event that proceeds via this reaction
-      virtual std::shared_ptr< HepMC3::GenEvent > create_event(
-        int particle_id_a, double KEa, marley::Generator& gen) const override;
-
       /// @brief Get the minimum lab-frame kinetic energy (MeV) of the
       /// projectile that allows this reaction to proceed via a transition to
       /// the residue's ground state
@@ -77,6 +73,11 @@ namespace marley {
       /// @brief Creates the description string based on the
       /// PDG code values for the initial and final particles
       virtual void set_description();
+
+      /// @brief Helper function that sets the charges of the target
+      /// and residue in an otherwise complete event record
+      void set_charge_attributes( std::shared_ptr< HepMC3::GenEvent >& event )
+        const;
 
       double md_gs_; ///< Ground state mass (MeV) of the residue
 

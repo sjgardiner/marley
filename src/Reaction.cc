@@ -229,6 +229,43 @@ std::shared_ptr< HepMC3::GenEvent > marley::Reaction::make_event_object(
   double Ec_cm, double Ed_cm, double E_level, int twoJ,
   const marley::Parity& P) const
 {
+  // Determine the Cartesian components of the ejectile's CM frame momentum
+  double sin_theta_c_cm = real_sqrt( 1. - std::pow(cos_theta_c_cm, 2) );
+
+  double pc_cm_x = sin_theta_c_cm * std::cos( phi_c_cm ) * pc_cm;
+  double pc_cm_y = sin_theta_c_cm * std::sin( phi_c_cm ) * pc_cm;
+  double pc_cm_z = cos_theta_c_cm * pc_cm;
+
+  // Create particle objects representing the ejectile and residue in the CM
+  // frame.
+  auto ejectile = marley_hepmc3::make_particle( pdg_c_, pc_cm_x, pc_cm_y,
+    pc_cm_z, Ec_cm, marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS, mc_ );
+
+  auto residue = marley_hepmc3::make_particle( pdg_d_, -pc_cm_x, -pc_cm_y,
+    -pc_cm_z, Ed_cm, marley_hepmc3::NUHEPMC_UNDECAYED_RESIDUE_STATUS, md_ );
+
+  // Get the lab-frame total energy of the projectile
+  double Ea = KEa + ma_;
+
+  // Determine the magnitude of the lab-frame 3-momentum of the projectile
+  double pa = real_sqrt( KEa * (KEa + 2.*ma_) );
+
+  // Boost the ejectile and residue into the lab frame.
+  double beta_z = pa / (Ea + mb_);
+  marley_kinematics::lorentz_boost( 0., 0., -beta_z, *ejectile );
+  marley_kinematics::lorentz_boost( 0., 0., -beta_z, *residue );
+
+  // Now that we have the outgoing particles defined in the lab frame, delegate
+  // the remaining tasks for creation of the event to this overloaded version
+  // of the function
+  return this->make_event_object( KEa, ejectile, residue, E_level, twoJ, P );
+}
+
+std::shared_ptr< HepMC3::GenEvent > marley::Reaction::make_event_object(
+  double KEa, const std::shared_ptr< HepMC3::GenParticle >& ejectile,
+  const std::shared_ptr< HepMC3::GenParticle >& residue,
+  double E_level, int twoJ, const marley::Parity& P ) const
+{
   // NuHepMC E.R.4
   auto event = std::make_shared< HepMC3::GenEvent >( HepMC3::Units::MEV,
     HepMC3::Units::CM );
@@ -246,13 +283,6 @@ std::shared_ptr< HepMC3::GenEvent > marley::Reaction::make_event_object(
 
   event->add_vertex( prim_vtx );
 
-  double sin_theta_c_cm = real_sqrt( 1. - std::pow(cos_theta_c_cm, 2) );
-
-  // Determine the Cartesian components of the ejectile's CM frame momentum
-  double pc_cm_x = sin_theta_c_cm * std::cos( phi_c_cm ) * pc_cm;
-  double pc_cm_y = sin_theta_c_cm * std::sin( phi_c_cm ) * pc_cm;
-  double pc_cm_z = cos_theta_c_cm * pc_cm;
-
   // Get the lab-frame total energy of the projectile
   double Ea = KEa + ma_;
 
@@ -267,19 +297,6 @@ std::shared_ptr< HepMC3::GenEvent > marley::Reaction::make_event_object(
 
   auto target = marley_hepmc3::make_particle( pdg_b_,
     marley_hepmc3::NUHEPMC_TARGET_STATUS, mb_ );
-
-  // Create particle objects representing the ejectile and residue in the CM
-  // frame.
-  auto ejectile = marley_hepmc3::make_particle( pdg_c_, pc_cm_x, pc_cm_y,
-    pc_cm_z, Ec_cm, marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS, mc_ );
-
-  auto residue = marley_hepmc3::make_particle( pdg_d_, -pc_cm_x, -pc_cm_y,
-    -pc_cm_z, Ed_cm, marley_hepmc3::NUHEPMC_UNDECAYED_RESIDUE_STATUS, md_ );
-
-  // Boost the ejectile and residue into the lab frame.
-  double beta_z = pa / (Ea + mb_);
-  marley_kinematics::lorentz_boost( 0., 0., -beta_z, *ejectile );
-  marley_kinematics::lorentz_boost( 0., 0., -beta_z, *residue );
 
   // Attach the particles to the primary vertex
   prim_vtx->add_particle_in( projectile );

@@ -35,8 +35,8 @@ namespace marley {
         int pdg_b, int pdg_c, int pdg_d, int q_d,
         const std::shared_ptr<TabulatedXSec>& txsec );
 
-      virtual Event create_event( int pdg_a, double KEa,
-        Generator& gen ) const override;
+      virtual std::shared_ptr< HepMC3::GenEvent > create_event(
+        int particle_id_a, double KEa, marley::Generator& gen ) const override;
 
       virtual double total_xs( int pdg_a, double KEa ) const override;
 

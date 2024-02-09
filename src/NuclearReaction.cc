@@ -118,3 +118,15 @@ void marley::NuclearReaction::set_description() {
   description_ += std::to_string( Af_ );
   description_ += marley_utils::element_symbols.at( Zf_ );
 }
+
+void marley::NuclearReaction::set_charge_attributes(
+  std::shared_ptr< HepMC3::GenEvent >& event ) const
+{
+  // Assume that the target is a neutral atom (q_b = 0)
+  auto target = marley_hepmc3::get_target( *event );
+  marley_hepmc3::set_particle_charge( *target, 0 );
+
+  // Assign the correct charge to the residue
+  auto residue = marley_hepmc3::get_residue( *event );
+  marley_hepmc3::set_particle_charge( *residue, q_d_ );
+}

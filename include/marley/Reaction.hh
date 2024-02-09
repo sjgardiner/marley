@@ -25,6 +25,7 @@
 
 namespace HepMC3 {
   class GenEvent;
+  class GenParticle;
 }
 
 namespace marley {
@@ -160,9 +161,7 @@ namespace marley {
       /// @brief Helper function that makes an event object.
       /// @details This function should be called by
       /// marley::Reaction::create_event() after CM frame scattering angles
-      /// have been sampled for the ejectile. For reactions where the residue
-      /// may be left in an excited state, the excitation energy should be
-      /// recorded by supplying it as the final argument.
+      /// have been sampled for the ejectile.
       /// @param KEa Lab-frame kinetic energy (MeV) of the projectile
       /// @param pc_cm Ejectile 3-momentum magnitude (MeV) in the CM frame
       /// @param cos_theta_c_cm Cosine of ejectile's CM frame polar angle
@@ -176,6 +175,20 @@ namespace marley {
         double KEa, double pc_cm, double cos_theta_c_cm, double phi_c_cm,
         double Ec_cm, double Ed_cm, double E_level, int twoJ,
         const marley::Parity& P ) const;
+
+      /// @brief Helper function that makes an event object.
+      /// @details This function expects pre-made HepMC3::GenParticle
+      /// objects as input that have four-momenta expressed in the lab frame.
+      /// @param KEa Lab-frame kinetic energy (MeV) of the projectile
+      /// @param ejectile GenParticle object for the ejectile
+      /// @param residue GenParticle object for the residue
+      /// @param E_level Residue excitation energy (MeV)
+      /// @param twoJ Two times the residue spin
+      /// @param P Intrinsic parity of the residue
+      virtual std::shared_ptr< HepMC3::GenEvent > make_event_object(
+        double KEa, const std::shared_ptr< HepMC3::GenParticle >& ejectile,
+        const std::shared_ptr< HepMC3::GenParticle >& residue,
+        double E_level, int twoJ, const marley::Parity& P ) const;
 
       /// Returns a vector of PDG codes for projectiles that participate
       /// in a particular ProcessType

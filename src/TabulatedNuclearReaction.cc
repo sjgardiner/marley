@@ -14,12 +14,17 @@
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
+// HepMC3 includes
+#include "HepMC3/FourVector.h"
+#include "HepMC3/GenParticle.h"
+
 // MARLEY includes
 #include "marley/Error.hh"
 #include "marley/Generator.hh"
 #include "marley/MassTable.hh"
 #include "marley/TabulatedNuclearReaction.hh"
 #include "marley/marley_utils.hh"
+#include "marley/hepmc3_utils.hh"
 
 marley::TabulatedNuclearReaction::TabulatedNuclearReaction(
   Reaction::ProcessType pt, int pdg_a, int pdg_b, int pdg_c, int pdg_d,
@@ -36,31 +41,31 @@ double marley::TabulatedNuclearReaction::total_xs( int pdg_a,
   return xsec_->integral( pdg_a, KEa );
 }
 
-marley::Event marley::TabulatedNuclearReaction::create_event( int pdg_a,
-  double KEa, marley::Generator& gen ) const
+std::shared_ptr< HepMC3::GenEvent > marley::TabulatedNuclearReaction
+  ::create_event( int pdg_a, double KEa, marley::Generator& gen ) const
 {
   // TODO: reduce code duplication here with AllowedNuclearReaction using the
   // common base class NuclearReaction
 
   // Check that the projectile supplied to this event is correct. If not, alert
   // the user that this event does not use the requested projectile.
-  if ( pdg_a != pdg_a_ ) throw marley::Error(std::string("Could")
-    + " not create this event. The requested projectile particle ID, "
-    + std::to_string(pdg_a) + ", does not match the projectile"
-    + " particle ID, " + std::to_string(pdg_a_) + ", in the reaction dataset.");
+  if ( pdg_a != pdg_a_ ) throw marley::Error( "Could not create this event."
+    " The requested projectile particle ID, " + std::to_string( pdg_a )
+    + ", does not match the projectile particle ID, " + std::to_string( pdg_a_ )
+    + ", in the reaction dataset." );
 
   // Sample a final residue energy level. First, check to make sure the given
   // projectile energy is above threshold for this reaction.
-  if ( KEa < KEa_threshold_ ) throw std::range_error(std::string("Could")
-    + " not create this event. Projectile kinetic energy " + std::to_string(KEa)
-    + " MeV is below the threshold value " + std::to_string(KEa_threshold_)
-    + " MeV.");
+  if ( KEa < KEa_threshold_ ) throw std::range_error( "Could"
+    " not create this event. Projectile kinetic energy " + std::to_string( KEa )
+    + " MeV is below the threshold value " + std::to_string( KEa_threshold_ )
+    + " MeV." );
 
   // Select a specific multipole to use for the current event using the
   // individual total cross sections
-  std::vector<double> multipole_weights;
-  std::vector<marley::TabulatedXSec::MultipoleLabel> multipoles;
-  std::vector<double> diff_max_values;
+  std::vector< double > multipole_weights;
+  std::vector< marley::TabulatedXSec::MultipoleLabel > multipoles;
+  std::vector< double > diff_max_values;
   const auto& table_map = xsec_->get_table_map();
   double sum_of_xsecs = 0.;
   for ( const auto& pair : table_map ) {
@@ -78,8 +83,8 @@ marley::Event marley::TabulatedNuclearReaction::create_event( int pdg_a,
   // If there are no multipole weights, we can't go on. Complain if this
   // is the case.
   if ( multipole_weights.empty() ) {
-    throw marley::Error("Could not create this event. The TabulatedXSec object"
-      " associated with this reaction does not own any nuclear response"
+    throw marley::Error( "Could not create this event. The TabulatedXSec"
+      " object associated with this reaction does not own any nuclear response"
       " tables." );
   }
 
@@ -87,14 +92,14 @@ marley::Event marley::TabulatedNuclearReaction::create_event( int pdg_a,
   // sections) is zero or negative (the latter is just to cover all
   // possibilities).
   if ( sum_of_xsecs <= 0. ) {
-    throw marley::Error( "Could not create this event. All"
-      " multipole total cross sections are nonpositive." );
+    throw marley::Error( "Could not create this event. All multipole total"
+      " cross sections are nonpositive." );
   }
 
   // Create a discrete distribution based on the weights. This will be
   // used to choose a single multipole for the current event.
-  std::discrete_distribution<size_t> multipole_dist( multipole_weights.begin(),
-    multipole_weights.end() );
+  std::discrete_distribution< size_t > multipole_dist(
+    multipole_weights.begin(), multipole_weights.end() );
 
   // Sample a matrix_element using our discrete distribution and the
   // current set of weights
@@ -166,18 +171,17 @@ marley::Event marley::TabulatedNuclearReaction::create_event( int pdg_a,
   // Determine the magnitude of the lab-frame 3-momentum of the projectile
   double pa = marley_utils::real_sqrt( KEa*(KEa + 2*ma_) );
 
-  // Create particle objects representing the projectile, target, and ejectile
-  // in the lab frame
-  marley::Particle projectile( pdg_a_, Ea, 0., 0., pa, ma_ );
-  marley::Particle target( pdg_b_, mb_, 0., 0., 0., mb_ );
-  marley::Particle ejectile( pdg_c_, Ec, pc_x, pc_y, pc_z, mc_ );
+  // Construct the lab-frame four-momenta of the projectile, target, and
+  // ejectile
+  HepMC3::FourVector pro_mom4( 0., 0., pa, Ea );
+  HepMC3::FourVector tar_mom4( 0., 0., 0., mb_ );
+  HepMC3::FourVector eje_mom4( pc_x, pc_y, pc_z, Ec );
 
   // Get the 4-momentum of the residue in the lab frame using conservation
-  double Ed = projectile.total_energy() + target.total_energy()
-    - ejectile.total_energy();
-  double pd_x = projectile.px() + target.px() - ejectile.px();
-  double pd_y = projectile.py() + target.py() - ejectile.py();
-  double pd_z = projectile.pz() + target.pz() - ejectile.pz();
+  double Ed = pro_mom4.e() + tar_mom4.e() - eje_mom4.e();
+  double pd_x = pro_mom4.px() + tar_mom4.px() - eje_mom4.px();
+  double pd_y = pro_mom4.py() + tar_mom4.py() - eje_mom4.py();
+  double pd_z = pro_mom4.pz() + tar_mom4.pz() - eje_mom4.pz();
 
   // Determine the residue mass from its 4-momentum
   md_ = marley_utils::real_sqrt( Ed*Ed - pd_x*pd_x - pd_y*pd_y - pd_z*pd_z );
@@ -188,11 +192,18 @@ marley::Event marley::TabulatedNuclearReaction::create_event( int pdg_a,
 
   // TODO: add some sanity-checking here for the excitation energy
 
-  // Create a particle to represent the residue
-  marley::Particle residue( pdg_d_, Ed, pd_x, pd_y, pd_z, md_, q_d_ );
+  // Create particle objects representing the ejectile and residue
+  auto ejectile = marley_hepmc3::make_particle( eje_mom4, pdg_c_,
+    marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS, mc_ );
 
-  // Create the event object and load it with the appropriate information
-  marley::Event event( projectile, target, ejectile, residue, Ex, twoJ, P );
+  auto residue = marley_hepmc3::make_particle( pdg_d_, pd_x, pd_y, pd_z, Ed,
+    marley_hepmc3::NUHEPMC_UNDECAYED_RESIDUE_STATUS, md_ );
+
+  auto event = marley::Reaction::make_event_object( KEa, ejectile, residue, Ex,
+    twoJ, P );
+
+  this->set_charge_attributes( event );
+
   return event;
 }
 
