@@ -206,24 +206,9 @@ marley::Generator marley::JSONConfig::create_generator() const
     }
   }
 
-  // Set the method to use for computing Coulomb corrections in all reactions.
-  // If the user gave an explicit setting for this, use that.
-  // Otherwise, interpolate between the Fermi function and the modified
-  // effective momentum approximation.
-  CMode coulomb_mode = CMode::FERMI_AND_MEMA; // Default method
-  if ( json_.has_key("coulomb_mode") ) {
-    const auto& cmode = json_.at( "coulomb_mode" );
-    if ( !cmode.is_string() ) throw marley::Error( "Invalid Coulomb mode"
-      " specification " + cmode.dump_string() );
-    std::string my_mode = cmode.to_string();
-    coulomb_mode = marley::CoulombCorrector
-      ::coulomb_mode_from_string( my_mode );
-  }
-
-  // Update the Coulomb mode setting for all configured nuclear reactions.
-  // Set a flag indicating whether at least one of them was a CC reaction.
-  // We will only bother to print the logging message below if one such
-  // reaction was found.
+  // Iterate through all configured nuclear reactions. Set a flag indicating
+  // whether at least one of them was a CC reaction. We will only bother to
+  // print the logging message below if one such reaction was found.
   bool found_cc = false;
   for ( auto& react : gen.reactions_ ) {
 
