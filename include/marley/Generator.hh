@@ -59,6 +59,10 @@ namespace marley {
       /// @brief Create a Generator using default settings
       Generator();
 
+      /// @brief Enumeration of the possible methods for handling CRPA strenght leakage
+      /// below the unbound threshold
+      enum class CRPADiscreteMode { IGNORE, MIRROR };
+
       /// @brief Create an Event using the NeutrinoSource, Target, Reaction,
       /// and StructureDatabase objects owned by this Generator
       std::shared_ptr< HepMC3::GenEvent > create_event();
@@ -221,6 +225,12 @@ namespace marley {
       /// know what you are doing.
       inline void set_do_deexcitations( bool do_them );
 
+      /// @brief Returns the value of the crpa_discrete_mode flag.
+      inline CRPADiscreteMode crpa_discrete_mode() const;
+
+      /// @brief Sets the value of the crpa_discrete_mode flag.
+      inline void set_crpa_discrete_mode( CRPADiscreteMode mode );
+
       /// @brief Computes the flux-averaged total cross section for all
       /// enabled neutrino reactions, taking target atom fractions into
       /// account as appropriate
@@ -277,6 +287,14 @@ namespace marley {
 
       inline void set_run_info( const std::shared_ptr< HepMC3::GenRunInfo >&
         run_info ) { run_info_ = run_info; }
+
+      /// Convert a string to a CRPA discrete mode value
+      static CRPADiscreteMode crpa_discrete_mode_from_string(
+        const std::string& str );
+
+      /// Convert a CRPA discrete mode value to a string
+      static std::string string_from_crpa_discrete_mode(
+        CRPADiscreteMode mode );
 
     private:
 
@@ -370,6 +388,13 @@ namespace marley {
       /// circumstances
       bool do_deexcitations_ = true;
 
+      /// @brief Helper map used by the methods to convert a CRPADiscreteMode value from a std::string
+      static std::map< CRPADiscreteMode, std::string > crpa_discrete_mode_string_map_;
+
+      /// @brief Flag that controls how we deal with the CRPA strength that
+      /// leaks under the unbound threshold
+      CRPADiscreteMode crpa_discrete_mode_;
+
       /// @brief Information describing the generator configuration at the
       /// start of a run. This is saved together with the events in HepMC3
       /// files.
@@ -426,4 +451,10 @@ namespace marley {
 
   inline void Generator::set_do_deexcitations( bool do_them )
     { do_deexcitations_ = do_them; }
+
+  inline Generator::CRPADiscreteMode Generator::crpa_discrete_mode() const
+    { return crpa_discrete_mode_; }
+
+  inline void Generator::set_crpa_discrete_mode( CRPADiscreteMode mode )
+    { crpa_discrete_mode_ = mode; }
 }

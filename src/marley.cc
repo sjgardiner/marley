@@ -417,6 +417,7 @@ int main( int argc, char* argv[] ) {
     start_time_point = std::chrono::system_clock::now();
     start_time = std::chrono::system_clock::to_time_t( start_time_point );
 
+    // Main generator event loop
     for (; ev_count <= num_events && !interrupted; ++ev_count) {
 
       // Create an event using the generator object

@@ -38,6 +38,7 @@
 using InterpMethod = marley::InterpolationGrid<double>::InterpolationMethod;
 using ProcType = marley::Reaction::ProcessType;
 using CMode = marley::CoulombCorrector::CoulombMode;
+using CRPADiscreteMode = marley::Generator::CRPADiscreteMode;
 
 // anonymous namespace for helper functions, etc.
 namespace {
@@ -193,6 +194,22 @@ marley::Generator marley::JSONConfig::create_generator() const
       }
     }
   }
+
+  // @Pablo: Set the flag to specify how to deal with CRPA strength 
+  // leaking below the unbound threshold
+  CRPADiscreteMode crpa_discrete_mode = CRPADiscreteMode::IGNORE; // Ignore by default
+  if ( json_.has_key("crpa_discrete_mode") ) {
+    const auto& crpamode = json_.at( "crpa_discrete_mode" );
+    if ( !crpamode.is_string() ) throw marley::Error("Invalid CRPA discrete mode"
+      " specification " + crpamode.dump_string() );
+    std::string my_mode = crpamode.to_string();
+    crpa_discrete_mode = marley::Generator
+      ::crpa_discrete_mode_from_string( my_mode );
+    
+    gen.set_crpa_discrete_mode( crpa_discrete_mode );
+  }
+  // Inform the user about the set CRPA discrete mode
+  MARLEY_LOG_INFO() << "Configured CRPA discrete mode: " << marley::Generator::string_from_crpa_discrete_mode( crpa_discrete_mode );
 
   // Skip the rest of initialization if we've disabled all reactions.
   // This can be used to partially initialize the Generator in unusual

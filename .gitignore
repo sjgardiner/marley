@@ -12,3 +12,4 @@ KE_*.pdf
 build/*
 !build/Makefile
 !docs/_static/example.hepevt
+.vscode

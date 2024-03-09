@@ -60,6 +60,13 @@ marley::Generator::Generator( uint_fast64_t seed )
   reseed( seed_ );
 }
 
+// Helper map used to convert a CRPADiscreteMode value from a std::string
+std::map< marley::Generator::CRPADiscreteMode, std::string > marley::Generator::crpa_discrete_mode_string_map_ =
+{
+  { marley::Generator::CRPADiscreteMode::IGNORE, "ignore" },
+  { marley::Generator::CRPADiscreteMode::MIRROR, "mirror" },
+};
+
 // Print the MARLEY logo to the logger stream(s) if you haven't already.
 void marley::Generator::print_logo() {
   static bool printed_logo = false;
@@ -827,4 +834,23 @@ void marley::Generator::finish_event_metadata( HepMC3::GenEvent& ev ) {
 
 void marley::Generator::set_json_config( const marley::JSON& jc ) {
   json_config_ = jc.dump_string();
+}
+
+// Convert a string to a CRPA discrete mode value
+marley::Generator::CRPADiscreteMode marley::Generator::crpa_discrete_mode_from_string(
+  const std::string& str )
+{
+  for ( const auto& pair : crpa_discrete_mode_string_map_ ) {
+    if ( str == pair.second ) return pair.first;
+  }
+  throw marley::Error( "The string \"" + str + "\" was not recognized"
+    " as a valid CRPA discrete mode setting" );
+}
+
+// Convert a CRPA discrete mode value to a string
+std::string marley::Generator::string_from_crpa_discrete_mode(  marley::Generator::CRPADiscreteMode mode ) {
+  auto it = crpa_discrete_mode_string_map_.find( mode );
+  if ( it != crpa_discrete_mode_string_map_.end() ) return it->second;
+  else throw marley::Error( "Unrecognized CRPADiscreteMode value encountered in"
+    " marley::Generator::string_from_crpa_discrete_mode " );
 }

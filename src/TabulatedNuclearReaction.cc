@@ -160,35 +160,77 @@ std::shared_ptr< HepMC3::GenEvent > marley::TabulatedNuclearReaction
 
   // Get the ejectile total energy and momentum using the sampled energy
   // transfer
-  double Ec = Ea - w;
-  double pc = marley_utils::real_sqrt( Ec*Ec - mc_*mc_ );
 
-  // Determine the Cartesian components of the ejectile's lab-frame momentum
-  double pc_x = stl * std::cos( phi_c ) * pc;
-  double pc_y = stl * std::sin( phi_c ) * pc;
-  double pc_z = ctl * pc;
+  double Ex; // Excitation energy of the residue
+  double Ec; // Ejectile total energy
+  double pc; // Magnitude of the ejectile's lab-frame momentum
+  double pc_x, pc_y, pc_z; // Cartesian components of the ejectile's lab-frame momentum
+  double pa; // Magnitude of the projectile's lab-frame 3-momentum
+  HepMC3::FourVector pro_mom4, tar_mom4, eje_mom4; // Lab-frame 4-momenta of the projectile, target, and ejectile
+  double Ed, pd_x, pd_y, pd_z; // Residue 4-momentum components
 
-  // Determine the magnitude of the lab-frame 3-momentum of the projectile
-  double pa = marley_utils::real_sqrt( KEa*(KEa + 2*ma_) );
+  // To be used to determine where Ex is above or below the unbound threshold
+  const auto& mt = marley::MassTable::Instance();
+  double unbound_threshold = mt.unbound_threshold( pdg_d_ );
 
-  // Construct the lab-frame four-momenta of the projectile, target, and
-  // ejectile
-  HepMC3::FourVector pro_mom4( 0., 0., pa, Ea );
-  HepMC3::FourVector tar_mom4( 0., 0., 0., mb_ );
-  HepMC3::FourVector eje_mom4( pc_x, pc_y, pc_z, Ec );
+  // Flag to indicate whether we have dealt witht the CRPA strength leak
+  bool crpa_strength_sorted = false;
 
-  // Get the 4-momentum of the residue in the lab frame using conservation
-  double Ed = pro_mom4.e() + tar_mom4.e() - eje_mom4.e();
-  double pd_x = pro_mom4.px() + tar_mom4.px() - eje_mom4.px();
-  double pd_y = pro_mom4.py() + tar_mom4.py() - eje_mom4.py();
-  double pd_z = pro_mom4.pz() + tar_mom4.pz() - eje_mom4.pz();
+  do{
+    Ec = Ea - w;
+    pc = marley_utils::real_sqrt( Ec*Ec - mc_*mc_ );
 
-  // Determine the residue mass from its 4-momentum
-  md_ = marley_utils::real_sqrt( Ed*Ed - pd_x*pd_x - pd_y*pd_y - pd_z*pd_z );
+    // Determine the Cartesian components of the ejectile's lab-frame momentum
+    pc_x = stl * std::cos( phi_c ) * pc;
+    pc_y = stl * std::sin( phi_c ) * pc;
+    pc_z = ctl * pc;
 
-  // The excitation energy is the mass difference between this mass and
-  // the residue's ground-state mass
-  double Ex = md_ - md_gs_;
+    // Determine the magnitude of the lab-frame 3-momentum of the projectile
+    pa = marley_utils::real_sqrt( KEa*(KEa + 2*ma_) );
+
+    // Construct the lab-frame four-momenta of the projectile, target, and
+    // ejectile
+    pro_mom4 = HepMC3::FourVector( 0., 0., pa, Ea );
+    tar_mom4 = HepMC3::FourVector( 0., 0., 0., mb_ );
+    eje_mom4 = HepMC3::FourVector(pc_x, pc_y, pc_z, Ec );
+
+    // Get the 4-momentum of the residue in the lab frame using conservation
+    Ed = pro_mom4.e() + tar_mom4.e() - eje_mom4.e();
+    pd_x = pro_mom4.px() + tar_mom4.px() - eje_mom4.px();
+    pd_y = pro_mom4.py() + tar_mom4.py() - eje_mom4.py();
+    pd_z = pro_mom4.pz() + tar_mom4.pz() - eje_mom4.pz();
+
+    // Determine the residue mass from its 4-momentum
+    md_ = marley_utils::real_sqrt( Ed*Ed - pd_x*pd_x - pd_y*pd_y - pd_z*pd_z );
+
+    // The excitation energy is the mass difference between this mass and
+    // the residue's ground-state mass
+    Ex = md_ - md_gs_;
+
+    // @Pablo: If the excitation energy Ex is below the unbound threshold...
+
+    // If crpa_discrete_mode_ is set to MIRROR, we mirror around the unbound threshold. 
+    // This is a temporary fix to avoid CRPA 
+    // strength leakage from the continuum into the discrete levels, which we don't want.
+    // Update w (energy transfer) if the excitation energy is below the unbound threshold
+    if (gen.crpa_discrete_mode() == marley::Generator::CRPADiscreteMode::MIRROR) {
+      if ( Ex < unbound_threshold ) {
+        double delta = 2 * (unbound_threshold - Ex);
+        w += delta;
+
+        // Print message to debug
+        MARLEY_LOG_DEBUG() << "Excitation energy " << Ex << " MeV is below the unbound threshold " << unbound_threshold << " MeV. "
+          "Mirroring the energy transfer around the unbound threshold.";
+      }
+      else {
+        crpa_strength_sorted = true;
+      }
+    }
+    else if (gen.crpa_discrete_mode() == marley::Generator::CRPADiscreteMode::IGNORE) {
+      crpa_strength_sorted = true;
+    }
+
+  } while ( ! crpa_strength_sorted );
 
   // TODO: add some sanity-checking here for the excitation energy
 
@@ -198,6 +240,8 @@ std::shared_ptr< HepMC3::GenEvent > marley::TabulatedNuclearReaction
 
   auto residue = marley_hepmc3::make_particle( pdg_d_, pd_x, pd_y, pd_z, Ed,
     marley_hepmc3::NUHEPMC_UNDECAYED_RESIDUE_STATUS, md_ );
+
+  // Make event object and set charge attributes
 
   auto event = marley::Reaction::make_event_object( KEa, ejectile, residue, Ex,
     twoJ, P );
