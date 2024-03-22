@@ -119,8 +119,21 @@ namespace marley_utils {
   constexpr double m_n = 939.5654205; // MeV
   // Nucleon mass (taken as the average of the proton and neutron masses)
   constexpr double m_nucleon = 0.5 * (m_p + m_n); // MeV
+  // Square of the nucleon mass
+  constexpr double m_nucleon2 = m_nucleon * m_nucleon; // MeV^2
   // Charged pion mass (from 2023 PDG Review of Particle Physics)
   constexpr double m_pion = 139.57039; // MeV
+  // Proton magnetic moment (from 2023 PDG Review of Particle Physics)
+  constexpr double mu_p = 2.79284734463; // mu_N (nuclear magneton)
+  // Neutron magnetic moment (from 2023 PDG Review of Particle Physics)
+  constexpr double mu_n = -1.9130427; // mu_N (nuclear magneton)
+
+  // Vector and axial masses and coupling constants
+  // (for now taken directly from Steven's thesis)
+  constexpr double M_V = 0.84; // MeV
+  constexpr double M_A = 1.026; // MeV
+  constexpr double g_V = 1.0; // MeV^(-2)
+  constexpr double g_A = 1.2695; // MeV^(-2)
 
   // Constant to use when converting from mb to MeV^(-2)
   constexpr double mb = 1/3.89379338e5; // MeV^(-2) mb^(-1)

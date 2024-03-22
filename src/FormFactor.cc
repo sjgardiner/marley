@@ -1,0 +1,130 @@
+/// @file
+/// @copyright Copyright (C) 2016-2024 Steven Gardiner
+/// @license GNU General Public License, version 3
+//
+// This file is part of MARLEY (Model of Argon Reaction Low Energy Yields)
+//
+// MARLEY is free software: you can redistribute it and/or modify it under the
+// terms of version 3 of the GNU General Public License as published by the
+// Free Software Foundation.
+//
+// For the full text of the license please see COPYING or
+// visit http://opensource.org/licenses/GPL-3.0
+//
+// Please respect the MCnet academic usage guidelines. See GUIDELINES
+// or visit https://www.montecarlonet.org/GUIDELINES for details.
+
+// Standard library includes
+
+// MARLEY includes
+#include "marley/FormFactor.hh"
+#include "marley/marley_utils.hh"
+#include "marley/Error.hh"
+
+// The default constructor sets the Q^2 scaling mode
+marley::FormFactor::FormFactor( Q2ScalingMode mode ) : q2_scaling_mode_(mode) {}
+
+// Dipole dependence form factor
+double marley::FormFactor::dipole( double Q2, double M ) const {
+  return 1.0 / ( ( 1.0 + Q2 / M / M ) * ( 1.0 + Q2 / M / M ) );
+}
+
+// F1_n form factor
+double marley::FormFactor::F1_n( double Q2, double M ) const {
+  if (q2_scaling_mode_ == Q2ScalingMode::FLAT) {
+    return 1.0;
+  } else if (q2_scaling_mode_ == Q2ScalingMode::DIPOLE) {
+
+    double prefactor = ( marley_utils::mu_n * Q2 )
+                    / (4 * marley_utils::m_nucleon2 + Q2);
+
+    return prefactor * dipole(Q2, M);
+
+  } else {
+    throw marley::Error("Invalid Q^2 scaling mode.");
+  }
+}
+
+// F1_p form factor
+double marley::FormFactor::F1_p( double Q2, double M ) const {
+  if (q2_scaling_mode_ == Q2ScalingMode::FLAT) {
+    return 1.0;
+  } else if (q2_scaling_mode_ == Q2ScalingMode::DIPOLE) {
+
+    double prefactor = ( 4 * marley_utils::m_nucleon2 + marley_utils::mu_p * Q2 )
+                    / (4 * marley_utils::m_nucleon2 + Q2);
+
+    return prefactor * dipole(Q2, M);
+
+  } else {
+    throw marley::Error("Invalid Q^2 scaling mode.");
+  }
+}
+
+// F2_n form factor
+double marley::FormFactor::F2_n( double Q2, double M ) const {
+  if (q2_scaling_mode_ == Q2ScalingMode::FLAT) {
+    return 1.0;
+  } else if (q2_scaling_mode_ == Q2ScalingMode::DIPOLE) {
+
+    double prefactor = ( 4 * marley_utils::m_nucleon2 * marley_utils::mu_n )
+                      / (4 * marley_utils::m_nucleon2 + Q2);
+
+    return prefactor * dipole(Q2, M);
+
+  } else {
+    throw marley::Error("Invalid Q^2 scaling mode.");
+  }
+}
+
+// F2_p form factor
+double marley::FormFactor::F2_p( double Q2, double M ) const {
+  if (q2_scaling_mode_ == Q2ScalingMode::FLAT) {
+    return 1.0;
+  } else if (q2_scaling_mode_ == Q2ScalingMode::DIPOLE) {
+
+    double prefactor = ( 4 * marley_utils::m_nucleon2 * (marley_utils::mu_p - 1) )
+                    / (4 * marley_utils::m_nucleon2 + Q2);
+
+    return prefactor * dipole(Q2, M);
+
+  } else {
+    throw marley::Error("Invalid Q^2 scaling mode.");
+  }
+}
+
+// F3 form factor
+double marley::FormFactor::F3( double Q2, double M ) const { return 0.0; }
+
+// GA form factor
+double marley::FormFactor::GA( double Q2, double M ) const {
+  if (q2_scaling_mode_ == Q2ScalingMode::FLAT) {
+    return 1.0;
+  } else if (q2_scaling_mode_ == Q2ScalingMode::DIPOLE) {
+
+    return marley_utils::g_A * dipole(Q2, M);
+
+  } else {
+    throw marley::Error("Invalid Q^2 scaling mode.");
+  }
+  
+}
+
+// GP form factor
+double marley::FormFactor::GP( double Q2, double M ) const {
+  if (q2_scaling_mode_ == Q2ScalingMode::FLAT) {
+    return 1.0;
+  } else if (q2_scaling_mode_ == Q2ScalingMode::DIPOLE) {
+
+    double prefactor = (2 * marley_utils::m_nucleon2 * marley_utils::g_A) 
+              / (marley_utils::m_pion * marley_utils::m_pion + Q2);
+    
+    return prefactor * dipole(Q2, M);
+
+  } else {
+    throw marley::Error("Invalid Q^2 scaling mode.");
+  }
+}
+
+// G3 form factor
+double marley::FormFactor::G3( double Q2, double M ) const { return 0.0; }
