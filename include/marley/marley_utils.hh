@@ -101,9 +101,10 @@ namespace marley_utils {
   // Natural logarithm of 2
   const double log_2 = std::log(2);
 
-  // The physical constants given here were all taken from
+  // The physical constants given here were taken from
   // the 2014 edition of the Review of Particle Physics
-  // published by the Particle Data Group.
+  // published by the Particle Data Group, except where
+  // otherwise noted.
 
   // Fine structure constant
   constexpr double alpha = 7.2973525698e-3;
@@ -112,6 +113,15 @@ namespace marley_utils {
   constexpr double hbar_c2 = hbar_c * hbar_c; // MeV^2 * fm^2
   // Electron mass
   constexpr double m_e = 0.510998928; // MeV
+  // Proton mass (from 2023 PDG Review of Particle Physics)
+  constexpr double m_p = 938.27208816; // MeV
+  // Neutron mass (from 2023 PDG Review of Particle Physics)
+  constexpr double m_n = 939.5654205; // MeV
+  // Nucleon mass (taken as the average of the proton and neutron masses)
+  constexpr double m_nucleon = 0.5 * (m_p + m_n); // MeV
+  // Charged pion mass (from 2023 PDG Review of Particle Physics)
+  constexpr double m_pion = 139.57039; // MeV
+
   // Constant to use when converting from mb to MeV^(-2)
   constexpr double mb = 1/3.89379338e5; // MeV^(-2) mb^(-1)
   // Constant to use to convert from fm^2 to 10^(-40) cm^2
