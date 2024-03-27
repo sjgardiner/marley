@@ -130,10 +130,10 @@ namespace marley_utils {
 
   // Vector and axial masses and coupling constants
   // (for now taken directly from Steven's thesis)
-  constexpr double M_V = 0.84; // MeV
-  constexpr double M_A = 1.026; // MeV
-  constexpr double g_V = 1.0; // MeV^(-2)
-  constexpr double g_A = 1.2695; // MeV^(-2)
+  constexpr double M_V = 0.84 * 1e3; // MeV
+  constexpr double M_A = 1.026 * 1e3; // MeV
+  constexpr double g_V = 1.0;
+  constexpr double g_A = 1.2695;
 
   // Constant to use when converting from mb to MeV^(-2)
   constexpr double mb = 1/3.89379338e5; // MeV^(-2) mb^(-1)
