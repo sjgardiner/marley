@@ -26,6 +26,7 @@
 
 // MARLEY includes
 #include "marley/AllowedNuclearReaction.hh"
+#include "marley/AllowedNuclearReactionWithQ2.hh"
 #include "marley/ElectronReaction.hh"
 #include "marley/HauserFeshbachDecay.hh"
 #include "marley/Logger.hh"
@@ -347,7 +348,8 @@ const std::vector<int>& marley::Reaction::get_projectiles(ProcType pt) {
 
 std::vector< std::unique_ptr<marley::Reaction> >
   marley::Reaction::load_from_file( const std::string& filename,
-  marley::StructureDatabase& db, CoulombCorrector::CoulombMode coulomb_mode )
+  marley::StructureDatabase& db, CoulombCorrector::CoulombMode coulomb_mode,
+  FormFactor::FFScalingMode ff_scaling_mode)
 {
   // Create an empty vector to start
   std::vector< std::unique_ptr<marley::Reaction> > loaded_reactions;
@@ -418,7 +420,7 @@ std::vector< std::unique_ptr<marley::Reaction> >
   iss >> integer_data_format;
   auto df = static_cast<DataFormat>( integer_data_format );
 
-  if ( df == AllowedApproximation ) {
+  if ( ( df == AllowedApproximation ) || ( df == AllowedApproximationWithQ2 ) ) {
 
     // Read in all of the level energy (MeV), squared matrix element (B(F) or
     // B(GT) strength), and matrix element type identifier (0 represents B(F),
@@ -481,14 +483,22 @@ std::vector< std::unique_ptr<marley::Reaction> >
     for ( const int& pdg_a : get_projectiles(proc_type) ) {
       int pdg_c = get_ejectile_pdg(pdg_a, proc_type);
 
-      loaded_reactions.emplace_back(
-        std::make_unique< marley::AllowedNuclearReaction >( proc_type, pdg_a,
-        pdg_b, pdg_c, pdg_d, q_d, matrix_elements, coulomb_mode )
-      );
+      if ( df == AllowedApproximation ) {
+        loaded_reactions.emplace_back(
+          std::make_unique< marley::AllowedNuclearReaction >( proc_type, pdg_a,
+          pdg_b, pdg_c, pdg_d, q_d, matrix_elements, coulomb_mode )
+        );
+        
+      } else if ( df == AllowedApproximationWithQ2 ) {
+        loaded_reactions.emplace_back(
+          std::make_unique< marley::AllowedNuclearReactionWithQ2 >( proc_type, pdg_a,
+          pdg_b, pdg_c, pdg_d, q_d, matrix_elements, coulomb_mode, ff_scaling_mode )
+        );
+      }
+
     }
 
-  }
-  else if ( df == MultipoleResponses ) {
+  } else if ( df == MultipoleResponses ) {
 
     // An energy shift is provided following the data format code if we
     // are working with multipole responses. This accounts for the energy

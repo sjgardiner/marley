@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "marley/CoulombCorrector.hh"
+#include "marley/FormFactor.hh"
 #include "marley/MassTable.hh"
 #include "marley/TargetAtom.hh"
 
@@ -62,6 +63,11 @@ namespace marley {
         /// Fermi and Gamow-Teller matrix elements are tabulated for discrete
         /// nuclear levels
         AllowedApproximation = 0,
+        /// Fermi and Gamow-Teller matrix elements are tabulated for discrete
+        /// nuclear levels, and the nuclear form factors are scaled with
+        /// Q^2 in the matrix elements
+        /// @todo this should't really be here, as the DataFormat is exactly the same
+        AllowedApproximationWithQ2 = 2,
         /// Continuum nuclear responses are given for one or more multipoles
         MultipoleResponses = 1
       };
@@ -112,7 +118,8 @@ namespace marley {
       /// Reaction objects given a file with matrix element data
       static std::vector< std::unique_ptr<Reaction> >
         load_from_file( const std::string& filename,
-        StructureDatabase& db, CoulombCorrector::CoulombMode coulomb_mode );
+        StructureDatabase& db, CoulombCorrector::CoulombMode coulomb_mode,
+        FormFactor::FFScalingMode ff_scaling_mode );
 
       /// Function that returns the ejectile PDG code given the projectile
       /// PDG code and the ProcessType

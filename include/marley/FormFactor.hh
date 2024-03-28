@@ -34,16 +34,22 @@ namespace marley {
     public:
 
       /// @brief Enumeration of the possible Q^2 scaling modes for the form factors
-      enum class Q2ScalingMode { DIPOLE, FLAT };
+      enum class FFScalingMode { DIPOLE, FLAT };
 
       /// @brief Class constructor
-      FormFactor( Q2ScalingMode mode = Q2ScalingMode::DIPOLE );
+      FormFactor( FFScalingMode mode = FFScalingMode::DIPOLE );
 
       /// @brief Get the current Q^2 scaling mode
-      inline Q2ScalingMode q2_scaling_mode() const;
+      inline FFScalingMode ff_scaling_mode() const;
 
       /// @brief Set the Q^2 scaling mode
-      inline void set_q2_scaling_mode( Q2ScalingMode mode );
+      inline void set_ff_scaling_mode( FFScalingMode mode );
+
+      /// @brief Convert a string to a Q^2 scaling mode
+      static FFScalingMode ff_scaling_mode_from_string( const std::string& str );
+
+      /// @brief Convert a Q^2 scaling mode to a string
+      static std::string string_from_ff_scaling_mode( FFScalingMode mode );
 
       // Q^2 scaling functions
 
@@ -105,18 +111,21 @@ namespace marley {
       double G3( double Q2, double M ) const;
 
     private:
-      
+
+      /// @brief Helper map for converting strings to Q^2 scaling modes and vice versa
+      static std::map<FFScalingMode, std::string> ff_scaling_mode_map_;
+
       /// @brief The current Q^2 scaling mode
-      Q2ScalingMode q2_scaling_mode_;
+      FFScalingMode ff_scaling_mode_;
 
   };
 
   // Inline function definitions
-  inline FormFactor::Q2ScalingMode FormFactor::q2_scaling_mode() const
-    { return q2_scaling_mode_; }
+  inline FormFactor::FFScalingMode FormFactor::ff_scaling_mode() const
+    { return ff_scaling_mode_; }
 
-  inline void FormFactor::set_q2_scaling_mode( Q2ScalingMode mode )
-    { q2_scaling_mode_ = mode; }
+  inline void FormFactor::set_ff_scaling_mode( FFScalingMode mode )
+    { ff_scaling_mode_ = mode; }
 
   inline double FormFactor::F1( double Q2, double M ) const
     { return ( F1_p( Q2, M ) - F1_n( Q2, M ) ); }

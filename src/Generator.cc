@@ -848,7 +848,8 @@ marley::Generator::CRPADiscreteMode marley::Generator::crpa_discrete_mode_from_s
 }
 
 // Convert a CRPA discrete mode value to a string
-std::string marley::Generator::string_from_crpa_discrete_mode(  marley::Generator::CRPADiscreteMode mode ) {
+std::string marley::Generator::string_from_crpa_discrete_mode(  marley::Generator::CRPADiscreteMode mode ) 
+{
   auto it = crpa_discrete_mode_string_map_.find( mode );
   if ( it != crpa_discrete_mode_string_map_.end() ) return it->second;
   else throw marley::Error( "Unrecognized CRPADiscreteMode value encountered in"
