@@ -488,11 +488,12 @@ std::vector< std::unique_ptr<marley::Reaction> >
           std::make_unique< marley::AllowedNuclearReaction >( proc_type, pdg_a,
           pdg_b, pdg_c, pdg_d, q_d, matrix_elements, coulomb_mode )
         );
-        
+
       } else if ( df == AllowedApproximationWithQ2 ) {
         loaded_reactions.emplace_back(
           std::make_unique< marley::AllowedNuclearReactionWithQ2 >( proc_type, pdg_a,
-          pdg_b, pdg_c, pdg_d, q_d, matrix_elements, coulomb_mode, ff_scaling_mode )
+          pdg_b, pdg_c, pdg_d, q_d, matrix_elements, coulomb_mode, ff_scaling_mode,
+          false )
         );
       }
 

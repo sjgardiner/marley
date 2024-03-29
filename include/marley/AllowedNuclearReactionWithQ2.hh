@@ -56,7 +56,8 @@ namespace marley {
       AllowedNuclearReactionWithQ2( ProcessType pt, int pdg_a, int pdg_b, int pdg_c,
         int pdg_d, int q_d,
         const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els,
-        CoulombCorrector::CoulombMode mode, FormFactor::FFScalingMode ff_scaling_mode );
+        CoulombCorrector::CoulombMode mode, FormFactor::FFScalingMode ff_scaling_mode,
+        bool superallowed);
 
       virtual std::shared_ptr< HepMC3::GenEvent > create_event(
         int particle_id_a, double KEa, marley::Generator& gen ) const override;
@@ -83,7 +84,7 @@ namespace marley {
       /// @param cos_theta_c_cm Ejectile scattering cosine as measured
       /// in the CM frame
       double diff_xs( const marley::MatrixElement& mat_el, double KEa,
-        double cos_theta_c_cm ) const;
+        double cos_theta_c_cm, double& beta_c_cm, bool check_max_E_level ) const;
 
       /// @brief Differential cross section
       /// @f$d\sigma/d\cos\theta_{c}^{\mathrm{CM}}@f$
@@ -109,6 +110,12 @@ namespace marley {
       /// then the check will be skipped.
       virtual double total_xs( const marley::MatrixElement& me, double KEa,
         double& beta_c_cm, bool check_max_E_level = true ) const;
+
+      /// @brief Returns the Bessel function factor that appears in the
+      /// differential cross section for a given value of kappa (modulus of
+      /// the momentum transfer in the CM frame)
+      /// @param kappa Modulus of the momentum transfer in the CM frame
+      double bessel_factor( double kappa ) const;
 
       /// Allows access to the owned vector of MatrixElement objects
       inline const std::vector<marley::MatrixElement>& matrix_elements() const
@@ -162,6 +169,9 @@ namespace marley {
 
       /// @brief Object that handles calculations of nuclear form factors
       FormFactor form_factor_;
+
+      /// @brief Flag that indicates whether to include aditional terms beyond the q->0 limit
+      bool superallowed_;
   };
 
 }
