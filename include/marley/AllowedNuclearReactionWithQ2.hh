@@ -140,7 +140,7 @@ namespace marley {
       /// Dimensionless speed</a> of the ejectile in the CM frame
       /// @param gen Reference to the Generator to use for random sampling
       double sample_cos_theta_c_cm( const marley::MatrixElement& matrix_el,
-        double beta_c_cm, marley::Generator& gen ) const;
+        double KEa, double beta_c_cm, marley::Generator& gen ) const;
 
       /// Helper function for total_xs and summed_diff_xs()
       /// @param pdg_a PDG code for the projectile
