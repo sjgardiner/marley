@@ -174,7 +174,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   }
 
   // Set the way the form factors depend on Q^2 in all reactions.
-  FFScalingMode ff_scaling_mode = FFScalingMode::FLAT; // Default mode
+  FFScalingMode ff_scaling_mode = FFScalingMode::DIPOLE; // Default mode
   if ( json_.has_key("ff_scaling_mode") ) {
     const auto& ffmode = json_.at( "ff_scaling_mode" );
     if ( !ffmode.is_string() ) throw marley::Error("Invalid form factor"
@@ -186,6 +186,17 @@ marley::Generator marley::JSONConfig::create_generator() const
   // Inform the user about the set form factor scaling mode
   MARLEY_LOG_INFO() << "Configured form factor scaling mode: " << marley::FormFactor::string_from_ff_scaling_mode( ff_scaling_mode );
 
+  // If the user has disabled non-superallowed terms in the allowed approximation...
+  bool superallowed = false; // Default is to include all terms
+  if ( json_.has_key("superallowed") ) {
+    const auto& superallowed = json_.at( "superallowed" );
+    if ( superallowed.is_bool() ) {
+      bool superallowed_or_not = superallowed.to_bool();
+      if ( superallowed_or_not ) {
+        MARLEY_LOG_INFO() << "Only 'superallowed' cross section terms will be included (if using the allowed approximation)";
+      }
+    }
+  }
 
   // Turn off calls to Generator::normalize_E_pdf() until we
   // have set up all the needed pieces
@@ -195,7 +206,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   prepare_direction( gen );
   prepare_structure( gen );
   prepare_neutrino_source( gen );
-  prepare_reactions( gen, coulomb_mode, ff_scaling_mode );
+  prepare_reactions( gen, coulomb_mode, ff_scaling_mode, superallowed );
   prepare_target( gen );
 
   // If the user has disabled nuclear de-excitations, then set the
@@ -384,7 +395,7 @@ void marley::JSONConfig::prepare_direction( marley::Generator& gen ) const {
 }
 
 void marley::JSONConfig::prepare_reactions( marley::Generator& gen,
-  CMode coulomb_mode, FFScalingMode ff_scaling_mode ) const
+  CMode coulomb_mode, FFScalingMode ff_scaling_mode, bool superallowed ) const
 {
   const auto& fm = marley::FileManager::Instance();
 
@@ -423,7 +434,8 @@ void marley::JSONConfig::prepare_reactions( marley::Generator& gen,
           }
 
           auto reacts = marley::Reaction::load_from_file(
-            full_file_name, gen.get_structure_db(), coulomb_mode, ff_scaling_mode );
+            full_file_name, gen.get_structure_db(), coulomb_mode,
+            ff_scaling_mode, superallowed );
 
           if ( reacts.empty() ) throw marley::Error( "Failed to load"
             " any reactions from the file " + full_file_name + ". Please"

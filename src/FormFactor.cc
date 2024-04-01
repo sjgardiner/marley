@@ -56,66 +56,62 @@ double marley::FormFactor::dipole( double Q2, double M ) const {
 
 // F1_n form factor
 double marley::FormFactor::F1_n( double Q2, double M ) const {
-  if (ff_scaling_mode_ == FFScalingMode::FLAT) {
-    return 1.0;
-  } else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
-
-    double prefactor = ( marley_utils::mu_n * Q2 )
-                    / (4 * marley_utils::m_nucleon2 + Q2);
-
-    return prefactor * dipole(Q2, M);
-
+  if (ff_scaling_mode_ == FFScalingMode::FLAT) { Q2 = 0.; }
+  else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
+    // Do nothing
   } else {
     throw marley::Error("Invalid Q^2 scaling mode.");
   }
+
+  double prefactor = ( marley_utils::mu_n * Q2 )
+                    / (4 * marley_utils::m_nucleon2 + Q2);
+
+  return prefactor * dipole(Q2, M);
 }
 
 // F1_p form factor
 double marley::FormFactor::F1_p( double Q2, double M ) const {
-  if (ff_scaling_mode_ == FFScalingMode::FLAT) {
-    return 1.0;
-  } else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
-
-    double prefactor = ( 4 * marley_utils::m_nucleon2 + marley_utils::mu_p * Q2 )
-                    / (4 * marley_utils::m_nucleon2 + Q2);
-
-    return prefactor * dipole(Q2, M);
-
+  if (ff_scaling_mode_ == FFScalingMode::FLAT) { Q2 = 0.; }
+  else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
+    // Do nothing
   } else {
     throw marley::Error("Invalid Q^2 scaling mode.");
   }
+
+  double prefactor = ( 4 * marley_utils::m_nucleon2 + marley_utils::mu_p * Q2 )
+                  / (4 * marley_utils::m_nucleon2 + Q2);
+
+  return prefactor * dipole(Q2, M);
 }
 
 // F2_n form factor
 double marley::FormFactor::F2_n( double Q2, double M ) const {
-  if (ff_scaling_mode_ == FFScalingMode::FLAT) {
-    return 1.0;
-  } else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
-
-    double prefactor = ( 4 * marley_utils::m_nucleon2 * marley_utils::mu_n )
-                      / (4 * marley_utils::m_nucleon2 + Q2);
-
-    return prefactor * dipole(Q2, M);
-
+  if (ff_scaling_mode_ == FFScalingMode::FLAT) { Q2 = 0.; }
+  else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
+    // Do nothing
   } else {
     throw marley::Error("Invalid Q^2 scaling mode.");
   }
+
+  double prefactor = ( 4 * marley_utils::m_nucleon2 * marley_utils::mu_n )
+                    / (4 * marley_utils::m_nucleon2 + Q2);
+
+  return prefactor * dipole(Q2, M);
 }
 
 // F2_p form factor
 double marley::FormFactor::F2_p( double Q2, double M ) const {
-  if (ff_scaling_mode_ == FFScalingMode::FLAT) {
-    return 1.0;
-  } else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
-
-    double prefactor = ( 4 * marley_utils::m_nucleon2 * (marley_utils::mu_p - 1) )
-                    / (4 * marley_utils::m_nucleon2 + Q2);
-
-    return prefactor * dipole(Q2, M);
-
+  if (ff_scaling_mode_ == FFScalingMode::FLAT) { Q2 = 0.; }
+  else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
+    // Do nothing
   } else {
     throw marley::Error("Invalid Q^2 scaling mode.");
   }
+
+  double prefactor = ( 4 * marley_utils::m_nucleon2 * (marley_utils::mu_p - 1) )
+                  / (4 * marley_utils::m_nucleon2 + Q2);
+
+  return prefactor * dipole(Q2, M);
 }
 
 // F3 form factor
@@ -123,32 +119,29 @@ double marley::FormFactor::F3( double Q2, double M ) const { return 0.0; }
 
 // GA form factor
 double marley::FormFactor::GA( double Q2, double M ) const {
-  if (ff_scaling_mode_ == FFScalingMode::FLAT) {
-    return 1.0;
-  } else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
-
-    return marley_utils::g_A * dipole(Q2, M);
-
+  if (ff_scaling_mode_ == FFScalingMode::FLAT) { Q2 = 0.; }
+  else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
+    // Do nothing
   } else {
     throw marley::Error("Invalid Q^2 scaling mode.");
   }
-  
+
+  return marley_utils::g_A * dipole(Q2, M);  
 }
 
 // GP form factor
 double marley::FormFactor::GP( double Q2, double M ) const {
-  if (ff_scaling_mode_ == FFScalingMode::FLAT) {
-    return 1.0;
-  } else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
-
-    double prefactor = (2 * marley_utils::m_nucleon2 * marley_utils::g_A) 
-              / (marley_utils::m_pion * marley_utils::m_pion + Q2);
-    
-    return prefactor * dipole(Q2, M);
-
+  if (ff_scaling_mode_ == FFScalingMode::FLAT) { Q2 = 0.; }
+  else if (ff_scaling_mode_ == FFScalingMode::DIPOLE) {
+    // Do nothing
   } else {
     throw marley::Error("Invalid Q^2 scaling mode.");
   }
+
+  double prefactor = (2 * marley_utils::m_nucleon2 * marley_utils::g_A) 
+            / (marley_utils::m_pion * marley_utils::m_pion + Q2);
+  
+  return prefactor * dipole(Q2, M);
 }
 
 // G3 form factor

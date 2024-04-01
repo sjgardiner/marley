@@ -119,7 +119,7 @@ namespace marley {
       static std::vector< std::unique_ptr<Reaction> >
         load_from_file( const std::string& filename,
         StructureDatabase& db, CoulombCorrector::CoulombMode coulomb_mode,
-        FormFactor::FFScalingMode ff_scaling_mode );
+        FormFactor::FFScalingMode ff_scaling_mode, bool superallowed );
 
       /// Function that returns the ejectile PDG code given the projectile
       /// PDG code and the ProcessType

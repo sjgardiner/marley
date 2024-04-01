@@ -349,7 +349,7 @@ const std::vector<int>& marley::Reaction::get_projectiles(ProcType pt) {
 std::vector< std::unique_ptr<marley::Reaction> >
   marley::Reaction::load_from_file( const std::string& filename,
   marley::StructureDatabase& db, CoulombCorrector::CoulombMode coulomb_mode,
-  FormFactor::FFScalingMode ff_scaling_mode)
+  FormFactor::FFScalingMode ff_scaling_mode, bool superallowed)
 {
   // Create an empty vector to start
   std::vector< std::unique_ptr<marley::Reaction> > loaded_reactions;
@@ -493,7 +493,7 @@ std::vector< std::unique_ptr<marley::Reaction> >
         loaded_reactions.emplace_back(
           std::make_unique< marley::AllowedNuclearReactionWithQ2 >( proc_type, pdg_a,
           pdg_b, pdg_c, pdg_d, q_d, matrix_elements, coulomb_mode, ff_scaling_mode,
-          false )
+          superallowed )
         );
       }
 
