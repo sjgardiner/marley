@@ -1,0 +1,65 @@
+# MARLEY reaction input file for neutrino CC on 40Ar
+# Revised 23 July 2018 by Steven Gardiner
+#
+# Particle IDs conform to the 2017 revision of the
+# Particle Data Group Monte Carlo Particle Numbering Scheme
+# (see http://pdg.lbl.gov/2018/reviews/rpp2018-rev-monte-carlo-numbering.pdf)
+#
+# B(GT) values for levels below 8 MeV were taken from M. Bhattacharya, et al.,
+# Phys. Rev. C 80, 055501 (2009). The values tabulated in that paper were
+# multiplied by g_A^2 = (1.26)^2 to account for their differing definition of
+# B(GT), which did not include that weak axial-vector coupling constant. The
+# value of g_A = 1.26 was implicitly assumed by Bhattacharya, et al. when
+# determining the value of the E_0 parameter used to extract the GT strengths
+# in their analysis. 40K excitation energies below 8 MeV were assigned using
+# known levels tabulated in J. Chen, Nucl. Data Sheets 140, 1 (2017). That
+# publication corresponds to the February 2017 revision of ENSDF
+# (https://www.nndc.bnl.gov/ensdf/) for A = 40.
+#
+# B(GT) values for levels above 8 MeV are theoretical estimates from a QRPA
+# calculation reported in M. Cheoun, et al., Eur. Phys. J. A 48, 137 (2012) and
+# obtained for use with MARLEY via a private communication. The definition of
+# B(GT) used in the QRPA calculation did not include the weak axial-vector
+# coupling g_A, which was taken to be g_A = 1.23 by the authors when computing
+# neutrino cross sections. Therefore, the QRPA B(GT) strengths taken from that
+# paper were multiplied by a factor of g_A^2 = (1.23)^2 before being included
+# in this file.
+#
+# The threshold for using theoretical B(GT) values was determined by choosing
+# the first level from the QRPA calculation for which the QRPA integrated
+# B(GT) strength exceeded the experimental integrated B(GT) strength at the
+# highest measured experimental level.
+#
+# ProcessType code and nuclear target PDG code
+0 1000180400 2
+# Experimental Ex, B(GT) pairs taken from
+# M. Bhattacharya, et al., Phys. Rev. C 80, 055501 (2009)
+2.289868 1.64              1
+2.730357 1.49              1
+3.14650  0.06              1
+3.517    0.16              1
+3.84027  0.44              1
+# B(F) strength to isobaric analog state at 4.384 MeV
+# Assumed to be equal to the sum-rule value g_V^2*(N_i - Z_i) with g_V = 1
+4.3837   4.00              0
+4.508    0.86              1
+4.765    0.48              1
+5.18989  0.59              1
+5.681    0.21              1
+6.118    0.48              1
+# We only keep nuclear levels up to the unbound threshold
+# which is = 6.43847 MeV for 40K
+#
+RADII
+# Nucleon (proton) wavefunction parameters
+# These are taken from a simple WS + Spin-Orbit shell model calculation and
+# used to compute the spherical Bessel function corrections to the matrix
+# elements.
+# level n l j degeneracy E sqrt(<r^2>)
+0 1 0 0.5 2 -37.245085 0.012482
+1 1 1 1.5 4 -27.702631 0.015382
+2 1 1 0.5 2 -24.925522 0.015150
+3 1 2 2.5 6 -17.234832 0.017713
+4 2 0 0.5 2 -13.026423 0.017773
+5 1 2 1.5 4 -11.988602 0.017716
+#
