@@ -46,25 +46,28 @@ namespace {
   using namespace marley_utils;
 
   std::map<ProcType, std::string> proc_type_to_string_map {
-    { ProcType::NeutrinoCC, "\u03BD CC" },
-    { ProcType::AntiNeutrinoCC, "anti-\u03BD CC" },
-    { ProcType::NC, "NC" },
+    { ProcType::NeutrinoCC_Discrete, "\u03BD CC (Discrete)" },
+    { ProcType::AntiNeutrinoCC_Discrete, "anti-\u03BD CC (Discrete)" },
+    { ProcType::NC_Discrete, "NC (Discrete)" },
     { ProcType::NuElectronElastic, "(anti-)\u03BD + e\u207B ES" },
+    { ProcType::NeutrinoCC_Continuum, "\u03BD CC (Continuum)" },
+    { ProcType::AntiNeutrinoCC_Continuum, "anti-\u03BD CC (Continuum)" },
+    { ProcType::NC_Continuum, "NC (Continuum)" },
   };
 
   // Defines the neutrino species that can participate in each type
   // of scattering process
   std::map<ProcType, std::vector<int> > proc_type_to_nu_pdg = {
 
-    { ProcType::NeutrinoCC,
+    { ProcType::NeutrinoCC_Discrete,
       { ELECTRON_NEUTRINO, MUON_NEUTRINO, TAU_NEUTRINO }
     },
 
-    { ProcType::AntiNeutrinoCC,
+    { ProcType::AntiNeutrinoCC_Discrete,
       { ELECTRON_ANTINEUTRINO, MUON_ANTINEUTRINO, TAU_ANTINEUTRINO }
     },
 
-    { ProcType::NC,
+    { ProcType::NC_Discrete,
       { ELECTRON_NEUTRINO, MUON_NEUTRINO, TAU_NEUTRINO,
         ELECTRON_ANTINEUTRINO, MUON_ANTINEUTRINO, TAU_ANTINEUTRINO }
     },
@@ -72,6 +75,19 @@ namespace {
     { ProcType::NuElectronElastic,
         { ELECTRON_NEUTRINO, MUON_NEUTRINO, TAU_NEUTRINO,
           ELECTRON_ANTINEUTRINO, MUON_ANTINEUTRINO, TAU_ANTINEUTRINO }
+    },
+
+    { ProcType::NeutrinoCC_Continuum,
+      { ELECTRON_NEUTRINO, MUON_NEUTRINO, TAU_NEUTRINO }
+    },
+
+    { ProcType::AntiNeutrinoCC_Continuum,
+      { ELECTRON_ANTINEUTRINO, MUON_ANTINEUTRINO, TAU_ANTINEUTRINO }
+    },
+
+    { ProcType::NC_Continuum,
+      { ELECTRON_NEUTRINO, MUON_NEUTRINO, TAU_NEUTRINO,
+        ELECTRON_ANTINEUTRINO, MUON_ANTINEUTRINO, TAU_ANTINEUTRINO }
     },
 
   };
@@ -324,9 +340,13 @@ int marley::Reaction::get_ejectile_pdg(int pdg_a, ProcType proc_type) {
   // given process type
   const auto& vec = proc_type_to_nu_pdg.at( proc_type );
   if ( std::find(vec.cbegin(), vec.cend(), pdg_a) != vec.end() ) {
-    if ( proc_type == ProcType::NeutrinoCC ) pdg_c = pdg_a - 1;
-    else if ( proc_type == ProcType::AntiNeutrinoCC ) pdg_c = pdg_a + 1;
-    else if ( proc_type == ProcType::NC ) pdg_c = pdg_a;
+    if ( proc_type == ProcType::NeutrinoCC_Discrete || 
+          proc_type == ProcType::NeutrinoCC_Continuum ) pdg_c = pdg_a - 1;
+    else if ( proc_type == ProcType::AntiNeutrinoCC_Discrete ||
+              proc_type == ProcType::AntiNeutrinoCC_Continuum ) pdg_c = pdg_a + 1;
+    else if ( proc_type == ProcType::NC_Discrete ||
+              proc_type == ProcType::NC_Continuum  ) pdg_c = pdg_a;
+
     else if ( proc_type == ProcType::NuElectronElastic ) pdg_c = pdg_a;
     else throw marley::Error("Unrecognized ProcessType encountered in"
       " marley::Reaction::get_ejectile_pdg()");
@@ -590,12 +610,14 @@ void marley::Reaction::get_residue_pdg_and_charge(
   int A = marley_utils::get_particle_A( pdg_b );
 
   // NC scattering leaves the target nucleus the same
-  if ( proc_type == marley::Reaction::ProcessType::NC ) {
+  if ( proc_type == marley::Reaction::ProcessType::NC_Discrete ||
+       proc_type == marley::Reaction::ProcessType::NC_Continuum ) {
     pdg_d = pdg_b;
     q_d = 0;
   }
   // Neutrino CC scattering raises Z by one
-  else if ( proc_type == marley::Reaction::ProcessType::NeutrinoCC ) {
+  else if ( proc_type == marley::Reaction::ProcessType::NeutrinoCC_Discrete ||
+            proc_type == marley::Reaction::ProcessType::NeutrinoCC_Continuum ) {
     // Check that the neutron number of the target is positive
     int Ni = A - Zi;
     if ( Ni <= 0 ) throw marley::Error("A NeutrinoCC process requires"
@@ -606,7 +628,8 @@ void marley::Reaction::get_residue_pdg_and_charge(
     q_d = 1;
   }
   // Antineutrino CC scattering lowers Z by one
-  else if ( proc_type == marley::Reaction::ProcessType::AntiNeutrinoCC ) {
+  else if ( proc_type == marley::Reaction::ProcessType::AntiNeutrinoCC_Discrete ||
+            proc_type == marley::Reaction::ProcessType::AntiNeutrinoCC_Continuum ) {
     // Check that the neutron number of the target is positive
     if ( Zi <= 0 ) throw marley::Error("An AntiNeutrinoCC process requires"
       " a target nucleus with Z > 0");

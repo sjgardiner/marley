@@ -26,6 +26,8 @@
 #include "marley/Reaction.hh"
 #include "marley/ResponseTable.hh"
 
+using ProcType = marley::Reaction::ProcessType;
+
 namespace marley {
 
   /// @brief Computes inclusive lepton-nucleus cross sections using
@@ -46,8 +48,8 @@ namespace marley {
       /// @brief Returns true if this cross section represents a CC process
       /// or false otherwise
       inline bool is_cc() const  {
-        bool is_cc = ( proc_type_ == marley::Reaction::ProcessType::NeutrinoCC
-          || proc_type_ == marley::Reaction::ProcessType::AntiNeutrinoCC );
+        bool is_cc = ( proc_type_ == ProcType::NeutrinoCC_Discrete || proc_type_ == ProcType::AntiNeutrinoCC_Discrete
+         || proc_type_ == ProcType::NeutrinoCC_Continuum || proc_type_ == ProcType::AntiNeutrinoCC_Continuum );
         return is_cc;
       }
 

@@ -387,8 +387,8 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
     " marley::AllowedNuclearReaction::diff_xs()" );
 
   // Apply extra factors based on the current process type
-  if ( process_type_ == ProcessType::NeutrinoCC
-    || process_type_ == ProcessType::AntiNeutrinoCC )
+  if ( process_type_ == ProcessType::NeutrinoCC_Discrete
+    || process_type_ == ProcessType::AntiNeutrinoCC_Discrete )
   {
     // Calculate a Coulomb correction factor using either a Fermi function
     // or the effective momentum approximation
@@ -396,7 +396,7 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
       beta_rel_cd );
     diff_xsec *= marley_utils::Vud2 * factor_C;
   }
-  else if ( process_type_ == ProcessType::NC )
+  else if ( process_type_ == ProcessType::NC_Discrete )
   {
     // For NC, extra factors are only needed for Fermi transitions (which
     // correspond to CEvNS since they can only access the nuclear ground state)
@@ -405,7 +405,7 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
       diff_xsec *= 0.25*std::pow( Q_w, 2 );
     }
   }
-  else throw marley::Error( "Unrecognized process type encountered in"
+  else throw marley::Error( "Unrecognized or invalid process type encountered in"
     " marley::AllowedNuclearReaction::total_xs()" );
 
   return diff_xsec;
@@ -544,14 +544,14 @@ double marley::AllowedNuclearReactionWithQ2::bessel_factor( double kappa_cm ) co
   int nucleon_limit;
 
   // Set the nucleon type depending on the process type
-  if ( process_type_ == ProcessType::NeutrinoCC ) {
+  if ( process_type_ == ProcessType::NeutrinoCC_Discrete ) {
     nucleon_limit = marley_utils::get_particle_Z( pdg_b_ );
-  } else if ( process_type_ == ProcessType::AntiNeutrinoCC ) {
+  } else if ( process_type_ == ProcessType::AntiNeutrinoCC_Discrete ) {
     nucleon_limit = marley_utils::get_particle_A( pdg_b_ ) - marley_utils::get_particle_Z( pdg_b_ );
   } else {
     // Throw an error 
     /// @todo Fix for NC reactions
-    throw marley::Error( "Unimplemented process type encountered in"
+    throw marley::Error( "Unrecognized or invalid process type encountered in"
       " marley::AllowedNuclearReaction::bessel_factor()" );
   }
 

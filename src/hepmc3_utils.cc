@@ -48,20 +48,30 @@ namespace {
     std::string desc_;
   };
 
+  /// @todo Vary description for discrete/continuum processes?
   const std::map< marley::Reaction::ProcessType, NuHepMCProcess >
     ptype_to_nuhepmc_proc =
   {
-    { marley::Reaction::ProcessType::NeutrinoCC,
+    { marley::Reaction::ProcessType::NeutrinoCC_Discrete,
       { 100, "vCC", "inclusive charged-current neutrino-nucleus"
         " scattering" } },
-    { marley::Reaction::ProcessType::AntiNeutrinoCC,
+    { marley::Reaction::ProcessType::AntiNeutrinoCC_Discrete,
       { 101, "anti-vCC", "inclusive charged-current antineutrino-nucleus"
         " scattering" } },
-    { marley::Reaction::ProcessType::NC,
+    { marley::Reaction::ProcessType::NC_Discrete,
       { 150, "NC", "inclusive neutral-current (anti)neutrino-nucleus"
         " scattering" } },
     { marley::Reaction::ProcessType::NuElectronElastic,
       { 700, "v-e", "(anti)neutrino-electron elastic scattering" } },
+    { marley::Reaction::ProcessType::NeutrinoCC_Continuum,
+      { 100, "vCC", "inclusive charged-current neutrino-nucleus"
+        " scattering" } },
+    { marley::Reaction::ProcessType::AntiNeutrinoCC_Continuum,
+      { 101, "anti-vCC", "inclusive charged-current antineutrino-nucleus"
+        " scattering" } },
+    { marley::Reaction::ProcessType::NC_Continuum,
+      { 150, "NC", "inclusive neutral-current (anti)neutrino-nucleus"
+        " scattering" } },
   };
 
   // G.R.5

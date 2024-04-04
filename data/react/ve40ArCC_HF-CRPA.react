@@ -6,7 +6,7 @@
 # (see http://pdg.lbl.gov/2018/reviews/rpp2018-rev-monte-carlo-numbering.pdf)
 #
 # ProcessType code, nuclear target PDG code, use tabulated responses, Delta
-0 1000180400 1 -5.88
+4 1000180400 1 -5.88
 # List of nuclear response tables
 responses_ar40_crpa_J0_G1.dat
 responses_ar40_crpa_J1_G1.dat

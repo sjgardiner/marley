@@ -258,7 +258,8 @@ marley::Generator marley::JSONConfig::create_generator() const
   for ( auto& react : gen.reactions_ ) {
 
     ProcType pt = react->process_type();
-    if ( pt == ProcType::NeutrinoCC || pt == ProcType::AntiNeutrinoCC ) {
+    if ( pt == ProcType::NeutrinoCC_Discrete || pt == ProcType::AntiNeutrinoCC_Discrete 
+        || pt == ProcType::NeutrinoCC_Continuum || pt == ProcType::AntiNeutrinoCC_Continuum) {
       found_cc = true;
     }
   }
@@ -294,14 +295,23 @@ marley::Generator marley::JSONConfig::create_generator() const
     if ( r->pdg_a() == source_pdg && atom_frac > 0. ) {
 
       std::string proc_type_str;
-      if ( r->process_type() == ProcType::NeutrinoCC
-        || r->process_type() == ProcType::AntiNeutrinoCC )
+      if ( r->process_type() == ProcType::NeutrinoCC_Discrete
+        || r->process_type() == ProcType::AntiNeutrinoCC_Discrete )
       {
-        proc_type_str = "CC";
+        proc_type_str = "CC (Discrete)";
       }
-      else if ( r->process_type() == ProcType::NC )
+      else if ( r->process_type() == ProcType::NeutrinoCC_Continuum
+        || r->process_type() == ProcType::AntiNeutrinoCC_Continuum )
       {
-        proc_type_str = "NC";
+        proc_type_str = "CC (Continuum)";
+      }
+      else if ( r->process_type() == ProcType::NC_Discrete )
+      {
+        proc_type_str = "NC (Discrete)";
+      }
+      else if ( r->process_type() == ProcType::NC_Continuum )
+      {
+        proc_type_str = "NC (Continuum)";
       }
       else if ( r->process_type() == ProcType::NuElectronElastic )
       {

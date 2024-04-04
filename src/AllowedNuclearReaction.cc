@@ -400,8 +400,8 @@ double marley::AllowedNuclearReaction::total_xs(
     * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm * me.strength();
 
   // Apply extra factors based on the current process type
-  if ( process_type_ == ProcessType::NeutrinoCC
-    || process_type_ == ProcessType::AntiNeutrinoCC )
+  if ( process_type_ == ProcessType::NeutrinoCC_Discrete
+    || process_type_ == ProcessType::AntiNeutrinoCC_Discrete )
   {
     // Calculate a Coulomb correction factor using either a Fermi function
     // or the effective momentum approximation
@@ -409,7 +409,7 @@ double marley::AllowedNuclearReaction::total_xs(
       beta_rel_cd );
     total_xsec *= marley_utils::Vud2 * factor_C;
   }
-  else if ( process_type_ == ProcessType::NC )
+  else if ( process_type_ == ProcessType::NC_Discrete )
   {
     // For NC, extra factors are only needed for Fermi transitions (which
     // correspond to CEvNS since they can only access the nuclear ground state)

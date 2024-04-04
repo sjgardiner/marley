@@ -52,10 +52,13 @@ namespace marley {
       /// @brief Enumerated type describing the kind of scattering process
       /// represented by a Reaction
       enum ProcessType {
-        NeutrinoCC = 0,     ///< Nuclear matrix elements contain @f$ t_{-} @f$
-        AntiNeutrinoCC = 1, ///< Nuclear matrix elements contain @f$ t_{+} @f$
-        NC = 2,             ///< Nuclear matrix elements contain @f$ t_{3} @f$
-        NuElectronElastic = 3 ///< Neutrino-electron elastic scattering
+        NeutrinoCC_Discrete = 0,     ///< Nuclear matrix elements contain @f$ t_{-} @f$ for a transition to a discrete nuclear level
+        AntiNeutrinoCC_Discrete = 1, ///< Nuclear matrix elements contain @f$ t_{+} @f$ for a transition to a discrete nuclear level
+        NC_Discrete = 2,             ///< Nuclear matrix elements contain @f$ t_{3} @f$ for a transition to a discrete nuclear level
+        NuElectronElastic = 3, ///< Neutrino-electron elastic scattering
+        NeutrinoCC_Continuum = 4,     ///< Nuclear matrix elements contain @f$ t_{-} @f$ for a transition to a continuum of nuclear levels
+        AntiNeutrinoCC_Continuum = 5, ///< Nuclear matrix elements contain @f$ t_{+} @f$ for a transition to a continuum of nuclear levels
+        NC_Continuum = 6,             ///< Nuclear matrix elements contain @f$ t_{3} @f$ for a transition to a continuum of nuclear levels
       };
 
       /// @brief Enumerated type describing the file format for reaction data
@@ -66,7 +69,7 @@ namespace marley {
         /// Fermi and Gamow-Teller matrix elements are tabulated for discrete
         /// nuclear levels, and the nuclear form factors are scaled with
         /// Q^2 in the matrix elements
-        /// @todo this should't really be here, as the DataFormat is exactly the same
+        /// @todo this should't really be here, as the DataFormat is exactly the same (not really anymore)
         AllowedApproximationWithQ2 = 2,
         /// Continuum nuclear responses are given for one or more multipoles
         MultipoleResponses = 1
