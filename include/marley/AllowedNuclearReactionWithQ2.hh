@@ -56,6 +56,7 @@ namespace marley {
       AllowedNuclearReactionWithQ2( ProcessType pt, int pdg_a, int pdg_b, int pdg_c,
         int pdg_d, int q_d,
         const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els,
+        const std::pair< std::vector<int>, std::vector<double> > nucleon_radii,
         CoulombCorrector::CoulombMode mode, FormFactor::FFScalingMode ff_scaling_mode,
         bool superallowed);
 
@@ -163,6 +164,10 @@ namespace marley {
       /// @brief Matrix elements representing all of the possible nuclear
       /// transitions that may be caused by this reaction
       std::shared_ptr< std::vector<marley::MatrixElement> > matrix_elements_;
+
+      /// @brief Pair of vectors containg the mean radius of the nucleon wavefunctions
+      /// and the degeneracies for each nuclear level
+      std::pair< std::vector<int>, std::vector<double> > nucleon_radii_;
 
       /// @brief Object that handles calculations of Coulomb correction factors
       CoulombCorrector coulomb_corrector_;

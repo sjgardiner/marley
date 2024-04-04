@@ -1,0 +1,125 @@
+# MARLEY reaction input file for neutrino CC on 40Ar
+# Revised 23 July 2018 by Steven Gardiner
+#
+# Particle IDs conform to the 2017 revision of the
+# Particle Data Group Monte Carlo Particle Numbering Scheme
+# (see http://pdg.lbl.gov/2018/reviews/rpp2018-rev-monte-carlo-numbering.pdf)
+#
+# B(GT) values for levels below 8 MeV were taken from M. Bhattacharya, et al.,
+# Phys. Rev. C 80, 055501 (2009). The values tabulated in that paper were
+# multiplied by g_A^2 = (1.26)^2 to account for their differing definition of
+# B(GT), which did not include that weak axial-vector coupling constant. The
+# value of g_A = 1.26 was implicitly assumed by Bhattacharya, et al. when
+# determining the value of the E_0 parameter used to extract the GT strengths
+# in their analysis. 40K excitation energies below 8 MeV were assigned using
+# known levels tabulated in J. Chen, Nucl. Data Sheets 140, 1 (2017). That
+# publication corresponds to the February 2017 revision of ENSDF
+# (https://www.nndc.bnl.gov/ensdf/) for A = 40.
+#
+# B(GT) values for levels above 8 MeV are theoretical estimates from a QRPA
+# calculation reported in M. Cheoun, et al., Eur. Phys. J. A 48, 137 (2012) and
+# obtained for use with MARLEY via a private communication. The definition of
+# B(GT) used in the QRPA calculation did not include the weak axial-vector
+# coupling g_A, which was taken to be g_A = 1.23 by the authors when computing
+# neutrino cross sections. Therefore, the QRPA B(GT) strengths taken from that
+# paper were multiplied by a factor of g_A^2 = (1.23)^2 before being included
+# in this file.
+#
+# The threshold for using theoretical B(GT) values was determined by choosing
+# the first level from the QRPA calculation for which the QRPA integrated
+# B(GT) strength exceeded the experimental integrated B(GT) strength at the
+# highest measured experimental level.
+#
+# ProcessType code and nuclear target PDG code
+0 1000180400 2
+# Experimental Ex, B(GT) pairs taken from
+# M. Bhattacharya, et al., Phys. Rev. C 80, 055501 (2009)
+2.289868 1.64              1
+2.730357 1.49              1
+3.14650  0.06              1
+3.517    0.16              1
+3.84027  0.44              1
+# B(F) strength to isobaric analog state at 4.384 MeV
+# Assumed to be equal to the sum-rule value g_V^2*(N_i - Z_i) with g_V = 1
+4.3837   4.00              0
+4.508    0.86              1
+4.765    0.48              1
+5.18989  0.59              1
+5.681    0.21              1
+6.118    0.48              1
+6.790    0.71              1
+7.468    0.06              1
+7.795    0.14              1
+7.952    0.97              1
+# Theoretical Ex, B(GT) pairs taken from
+# M. Cheoun, et al., Eur. Phys. J. A 48, 137 (2012).
+11.59108 1.3225472         1
+13.01664 0.14930551        1
+13.51028 0.23122075        1
+13.65988 0.000038299193    1
+14.31002 0.16924658        1
+14.34286 0.036690836       1
+14.3682  0.020436113       1
+14.47307 4.471732          1
+14.98677 0.0010891972      1
+15.34914 0.14218793        1
+15.51062 0.42591905        1
+16.23323 5.2888452         1
+17.43291 0.00010130933     1
+18.42558 0.96774135        1
+18.47468 0.014036106       1
+19.02422 0.54700542        1
+19.31833 0.00032056161     1
+19.56457 0.014590706       1
+20.01635 0.0030383964      1
+20.32009 0.10847971        1
+20.94568 2.0523446         1
+21.49745 0.0000098679283   1
+21.87256 0.013253134       1
+21.95297 0.37107025        1
+22.07659 0.18257996        1
+22.38623 0.0002928296      1
+22.67435 0.00022860493     1
+22.71968 0.0020326123      1
+22.91447 0.027979753       1
+22.97935 0.0000056309051   1
+23.88489 0.0052718372      1
+24.1001  0.00084474185     1
+25.35765 0.0000079788437   1
+25.55224 0.00019956094     1
+26.08764 0.010915853       1
+26.47011 0.11166832        1
+26.6057  0.0026337438      1
+26.84063 0.0012394006      1
+27.72068 0.15347094        1
+27.89673 0.00006087154     1
+28.04484 0.0092129534      1
+28.2149  0.000026444275    1
+28.57592 0.030781086       1
+29.16829 0.018256261       1
+29.51104 0.079716796       1
+30.46618 0.00059644384     1
+30.63295 0.072165242       1
+30.79981 0.0066674083      1
+30.83112 0.0000024155628   1
+31.85948 0.00019074529     1
+32.65315 0.0033805404      1
+33.03793 0.00000041098028  1
+33.07525 0.00016291311     1
+33.13236 0.016742841       1
+33.19678 0.020691006       1
+33.76989 0.0028880108      1
+35.02097 0.00003286541     1
+35.49114 0.0015370964      1
+36.61686 0.0016919929      1
+37.5633  0.00032760443     1
+37.67217 0.000012932899    1
+37.97363 0.15629105        1
+39.90956 0.046692466       1
+40.45606 0.0021293955      1
+41.76254 0.000001768       1
+43.25892 0.00017892486     1
+45.15706 0.0044535372      1
+45.85908 0.0000028358811   1
+48.69612 0.010752417       1
+55.85828 0.059163786       1

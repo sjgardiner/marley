@@ -189,9 +189,10 @@ marley::Generator marley::JSONConfig::create_generator() const
   // If the user has disabled non-superallowed terms in the allowed approximation...
   bool superallowed = false; // Default is to include all terms
   if ( json_.has_key("superallowed") ) {
-    const auto& superallowed = json_.at( "superallowed" );
-    if ( superallowed.is_bool() ) {
-      bool superallowed_or_not = superallowed.to_bool();
+    const auto& superallowed_from_json = json_.at( "superallowed" );
+    if ( superallowed_from_json.is_bool() ) {
+      bool superallowed_or_not = superallowed_from_json.to_bool();
+      superallowed = superallowed_or_not;
       if ( superallowed_or_not ) {
         MARLEY_LOG_INFO() << "Only 'superallowed' cross section terms will be included (if using the allowed approximation)";
       }

@@ -41,10 +41,12 @@ namespace {
 marley::AllowedNuclearReactionWithQ2::AllowedNuclearReactionWithQ2( ProcType pt,
   int pdg_a, int pdg_b, int pdg_c, int pdg_d, int q_d,
   const std::shared_ptr< std::vector<marley::MatrixElement> >& mat_els,
+  const std::pair< std::vector<int>, std::vector<double> > nucleon_radii,
   marley::CoulombCorrector::CoulombMode mode, marley::FormFactor::FFScalingMode ff_scaling_mode,
   bool superallowed )
   : marley::NuclearReaction( pt, pdg_a, pdg_b, pdg_c, pdg_d, q_d ),
-  matrix_elements_( mat_els ), coulomb_corrector_( pdg_c, pdg_d, mode ),
+  matrix_elements_( mat_els ), nucleon_radii_( nucleon_radii ),
+  coulomb_corrector_( pdg_c, pdg_d, mode ),
   form_factor_( ff_scaling_mode ), superallowed_( superallowed )
 {
 }
@@ -310,7 +312,7 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
 
   // Compute the magnitude of the transferred energy omega and momentum q in the CM frame
   double omega_cm = Ec_cm - KEa;
-  double kappa_cm = marley_utils::real_sqrt( std::pow( Ec_cm, 2 ) + std::pow( pc_cm, 2 )
+  double kappa_cm = marley_utils::real_sqrt( std::pow( KEa, 2 ) + std::pow( pc_cm, 2 )
     - 2 * KEa * pc_cm * cos_theta_c_cm );
   double Q2 = -(std::pow( omega_cm, 2 ) - std::pow( kappa_cm, 2 ));
 
@@ -338,7 +340,7 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
   // Common factors for the allowed approximation differential cross sections
   // for both CC and NC reactions, including Q^2 dependence
   double diff_xsec_prefactor = ( marley_utils::GF2 / ( 2 * marley_utils::pi ) )
-    * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm;
+    * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm * bessel_factor( kappa_cm );
 
   // Apply extra factors based on the matrix element type and order in expansion
   int not_superallowed = !superallowed_;
@@ -353,20 +355,33 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
   }
   else if ( mat_el.type() == ME_Type::GAMOW_TELLER ) {
     // Gamow-Teller transitions
-    double diff_xsec_0 = 1. - 1/3 * beta_c_cm * cos_theta_c_cm;
-    double diff_xsec_1 = -1/3 * kappa_cm / marley_utils::m_nucleon 
+    double diff_xsec_0 = 1. - 1./3 * beta_c_cm * cos_theta_c_cm;
+    double diff_xsec_1 = -1./3 * kappa_cm / marley_utils::m_nucleon 
                         * ( form_factor_.F1(Q2, marley_utils::M_V) + form_factor_.F2(Q2, marley_utils::M_V) ) 
                         / form_factor_.GA(Q2, marley_utils::M_A)
                         * ( beta_c_cm_0 - beta_a_cm_0 ) * not_superallowed;
-    double diff_xsec_2 = -1/3 * std::pow( kappa_cm / marley_utils::m_nucleon, 2)
+    double diff_xsec_2 = -1./3 * std::pow( kappa_cm / marley_utils::m_nucleon, 2)
                         * form_factor_.GP(Q2, marley_utils::M_A) / form_factor_.GA(Q2, marley_utils::M_A)
                         * ( 1 - beta_c_cm * cos_theta_c_cm + 2 * beta_c_cm_0 * beta_a_cm_0) * not_superallowed;
-    double diff_xsec_3 = -2/3 * kappa_cm * omega_cm / std::pow( marley_utils::m_nucleon, 2 )
+    double diff_xsec_3 = -2./3 * kappa_cm * omega_cm / std::pow( marley_utils::m_nucleon, 2 )
                         * form_factor_.GP(Q2, marley_utils::M_A) / form_factor_.GA(Q2, marley_utils::M_A)
                         * ( beta_c_cm_0 + beta_a_cm_0 ) * not_superallowed;
     
     diff_xsec = diff_xsec_prefactor * std::pow( form_factor_.GA(Q2, marley_utils::M_A), 2 )
-                * ( diff_xsec_0 + diff_xsec_1 + diff_xsec_2 + diff_xsec_3 ) * mat_el.strength() / marley_utils::g_A2;
+                * ( diff_xsec_0 + diff_xsec_1 + diff_xsec_2 + diff_xsec_3 ) 
+                * mat_el.strength() / marley_utils::g_A2;
+
+    // MARLEY_LOG_DEBUG() << "Not superallowed: " << not_superallowed << superallowed_;
+    // MARLEY_LOG_DEBUG() << "Diff_xsec_0: " << diff_xsec_0;
+    // MARLEY_LOG_DEBUG() << "Diff_xsec_1: " << diff_xsec_1;
+    // MARLEY_LOG_DEBUG() << "Diff_xsec_2: " << diff_xsec_2;
+    // MARLEY_LOG_DEBUG() << "Diff_xsec_3: " << diff_xsec_3;
+    // MARLEY_LOG_DEBUG() << "Prefactor: " << diff_xsec_prefactor;
+    // MARLEY_LOG_DEBUG() << "Strength: " << mat_el.strength();
+    // MARLEY_LOG_DEBUG() << "form factor: " << form_factor_.GA(Q2, marley_utils::M_A);
+    // MARLEY_LOG_DEBUG() << "cos_theta_c_cm: " << cos_theta_c_cm << " beta_c_cm: " << beta_c_cm ;
+    // MARLEY_LOG_DEBUG() << "kappa: " << kappa_cm << " omega: " << omega_cm << " Q2: " << Q2;
+    // MARLEY_LOG_DEBUG() << "bessel factor: " << bessel_factor( kappa_cm );
   }
   else throw marley::Error( "Unrecognized matrix element type encountered in"
     " marley::AllowedNuclearReaction::diff_xs()" );
@@ -415,6 +430,17 @@ double marley::AllowedNuclearReactionWithQ2::total_xs(
                       [ &mat_el, KEa, &beta_c_cm, check_max_E_level, this ]( double cos_theta_cm ) -> double
                       { return this->diff_xs( mat_el, KEa, cos_theta_cm, beta_c_cm, check_max_E_level ); },
                        -1., 1. );
+  // double total_xsec = integrator.num_integrate( 
+  //                   [  this ]( double cos_theta_cm ) -> double
+  //                   { return cos_theta_cm * cos_theta_cm; },
+  //                     -1., 1. );
+  //double total_xsec = 0.;
+  //double dummy = diff_xs( mat_el, KEa, 0.5, beta_c_cm, check_max_E_level );
+
+  // DEBUG: print the total cross section for this level
+  MARLEY_LOG_DEBUG() << "Chirp " << description_
+    << " to level with energy " << mat_el.level_energy() << " MeV is "
+    << total_xsec << " MeV^(-2).";
 
   return total_xsec;
 }
@@ -478,7 +504,8 @@ double marley::AllowedNuclearReactionWithQ2::summed_xs_helper( int pdg_a, double
           << description_ << " gave NaN result.";
         MARLEY_LOG_DEBUG() << "Parameters were level energy = "
           << mat_el.level_energy() << " MeV, projectile kinetic energy = "
-          << KEa << " MeV, and reduced matrix element = " << mat_el.strength();
+          << KEa << " MeV, and reduced matrix element = " << mat_el.strength()
+          << ". Differential was set to " << differential << ".";
         MARLEY_LOG_DEBUG() << "The partial cross section to this level"
           << " will be set to zero.";
         partial_xsec = 0.;
@@ -496,9 +523,55 @@ double marley::AllowedNuclearReactionWithQ2::summed_xs_helper( int pdg_a, double
 }
 
 // Bessel factor calculation
-double marley::AllowedNuclearReactionWithQ2::bessel_factor( double kappa ) const
+double marley::AllowedNuclearReactionWithQ2::bessel_factor( double kappa_cm ) const
 {
-  return 1.;
+  // If kappa is zero, return 1. to avoid division by zero.
+  if ( kappa_cm == 0. ) return 1.;
+
+  // If the scaling mode is set to flat, return 1.
+  if ( form_factor_.ff_scaling_mode() == marley::FormFactor::FFScalingMode::FLAT )
+    return 1.;
+
+  // If the nucleon radii pair is empty, give a warning and return 1.
+  if ( nucleon_radii_.first.empty() || nucleon_radii_.second.empty() ) {
+    MARLEY_LOG_WARNING() << "Nuclear radii vector is empty in"
+      << " marley::AllowedNuclearReaction::bessel_factor().";
+    return 1.;
+  }
+
+  double bessel_sum = 0.;
+  int nucleon_count = 0;
+  int nucleon_limit;
+
+  // Set the nucleon type depending on the process type
+  if ( process_type_ == ProcessType::NeutrinoCC ) {
+    nucleon_limit = marley_utils::get_particle_Z( pdg_b_ );
+  } else if ( process_type_ == ProcessType::AntiNeutrinoCC ) {
+    nucleon_limit = marley_utils::get_particle_A( pdg_b_ ) - marley_utils::get_particle_Z( pdg_b_ );
+  } else {
+    // Throw an error 
+    /// @todo Fix for NC reactions
+    throw marley::Error( "Unimplemented process type encountered in"
+      " marley::AllowedNuclearReaction::bessel_factor()" );
+  }
+
+  for ( int i = 0; i < nucleon_radii_.first.size(); i ++ ) {
+    int degeneracy = nucleon_radii_.first.at(i);
+    double radius = nucleon_radii_.second.at(i);
+
+    int level_i_count = (nucleon_count + degeneracy) <= nucleon_limit ? degeneracy 
+                        : nucleon_limit - nucleon_count;
+    nucleon_count += level_i_count;
+    bessel_sum += level_i_count * std::sin( kappa_cm * radius ) / ( kappa_cm * radius );
+    // MARLEY_LOG_DEBUG() << "Nucleon limit: " << nucleon_limit;
+    // MARLEY_LOG_DEBUG() << "radius: " << radius << " degeneracy: " << degeneracy;
+    // MARLEY_LOG_DEBUG() << "level_i_count: " << level_i_count << " nucleon_count: " << nucleon_count;
+
+  }
+  // MARLEY_LOG_DEBUG() << "size " << nucleon_radii_.first.size() << " " << nucleon_radii_.second.size();
+  // MARLEY_LOG_DEBUG() << "Bessel sum: " << bessel_sum;
+
+  return (bessel_sum / nucleon_limit) * (bessel_sum / nucleon_limit);
 }
 
 
