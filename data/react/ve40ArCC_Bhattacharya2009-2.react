@@ -123,3 +123,16 @@
 45.85908 0.0000028358811   1
 48.69612 0.010752417       1
 55.85828 0.059163786       1
+RADII
+# Nucleon (proton) wavefunction parameters
+# These are taken from a simple WS + Spin-Orbit shell model calculation and
+# used to compute the spherical Bessel function corrections to the matrix
+# elements.
+# level n l j degeneracy E sqrt(<r^2>)
+0 1 0 0.5 2 -37.245085 0.012482
+1 1 1 1.5 4 -27.702631 0.015382
+2 1 1 0.5 2 -24.925522 0.015150
+3 1 2 2.5 6 -17.234832 0.017713
+4 2 0 0.5 2 -13.026423 0.017773
+5 1 2 1.5 4 -11.988602 0.017716
+#
