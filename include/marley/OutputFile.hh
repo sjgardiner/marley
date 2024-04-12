@@ -73,7 +73,7 @@ namespace marley {
       // every event format that MARLEY knows how to write. The "ASCII" format
       // is MARLEY's native format for textual input and output of
       // HepMC3::GenEvent objects.
-      enum class Format { ASCII, ROOT };
+      enum class Format { ASCII, ROOT, PLAIN_ROOT };
 
     protected:
 
