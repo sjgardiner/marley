@@ -49,6 +49,9 @@
 #ifdef USE_ROOT
   #include "marley/RootJSONConfig.hh"
 #endif
+#ifndef USE_ROOT
+  #error TEMPORARY: Building this class (OutputFilePlainRoot) requires ROOT
+#endif
 
 namespace {
 
@@ -142,6 +145,15 @@ marley::OutputFilePlainRoot::OutputFilePlainRoot( const marley::JSON& output_con
   // Flux-averaged total cross section
   out_tree_->Branch( "xsec", &flux_avg_tot_xsec_, "xsec/D" );
 
+
+  // This is probably useless but here we go
+  PDGs_.clear();
+  Es_.clear();
+  KEs_.clear();
+  pXs_.clear();
+  pYs_.clear();
+  pZs_.clear();
+
 }
 
 /// @todo check if this function is neccessary and if it is, implement it
@@ -198,13 +210,6 @@ void marley::OutputFilePlainRoot::write_event( HepMC3::GenEvent* ev ) {
 
   // Instead of writing the event directly into ASCII, we "convert" it and write
   // it in plain ROOT format.
-  PDGs_.clear();
-  Es_.clear();
-  KEs_.clear();
-  pXs_.clear();
-  pYs_.clear();
-  pZs_.clear();
-
   auto projectile = marley_hepmc3::get_projectile( *ev );
   pdgv_ = projectile->pid();
 
