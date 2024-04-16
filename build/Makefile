@@ -150,6 +150,7 @@ ifneq ($(MAKECMDGOALS),uninstall)
   OBJECTS := $(notdir $(patsubst %.cc,%.o,$(wildcard $(SRC_DIR)/*.cc)))
   OBJECTS := $(filter-out marley.o marley_root.o, $(OBJECTS))
   OBJECTS := $(filter-out marsum.o OutputFileRoot.o, $(OBJECTS))
+  OBJECTS := $(filter-out OutputFilePlainRoot.o, $(OBJECTS))
   OBJECTS := $(filter-out MacroEventFileReader.o, $(OBJECTS))
 
   # Get information about the GNU Scientific Library installation
@@ -272,6 +273,7 @@ $(HEPMC3_SHARED_LIB): $(HEPMC3_OBJECTS)
       ROOT_SHARED_LIB_LDFLAGS := -l$(ROOT_SHARED_LIB_NAME)
       ROOT_SHARED_LIB_OBJECTS = marley_root.o JSONConfig.o OutputFile.o
       ROOT_SHARED_LIB_OBJECTS += OutputFileAscii.o OutputFileRoot.o
+      ROOT_SHARED_LIB_OBJECTS += OutputFilePlainRoot.o
       ROOT_SHARED_LIB_OBJECTS += EventFileReader.o $(ROOT_OBJ_DICT)
       #ROOT_SHARED_LIB_OBJECTS += MacroEventFileReader.o
   

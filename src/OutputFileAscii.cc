@@ -191,7 +191,7 @@ int_fast64_t marley::OutputFileAscii::bytes_written() {
   return byte_count_;
 }
 
-void marley::OutputFileAscii::write_event( const HepMC3::GenEvent* event ) {
+void marley::OutputFileAscii::write_event( HepMC3::GenEvent* event ) {
 
   if ( !event ) throw marley::Error( "Null pointer passed to"
     " OutputFileAscii::write_event()" );

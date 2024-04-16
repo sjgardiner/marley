@@ -65,7 +65,7 @@ namespace marley {
       /// @brief Write a new HepMC3::GenEvent to this output file
       /// @details If a nullptr is passed to this function, then
       /// a marley::Error will be thrown
-      virtual void write_event( const HepMC3::GenEvent* event ) = 0;
+      virtual void write_event( HepMC3::GenEvent* event ) = 0;
 
       bool mode_is_resume() const { return mode_ == Mode::RESUME; }
 

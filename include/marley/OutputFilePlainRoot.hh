@@ -47,8 +47,7 @@ namespace marley {
 
       virtual int_fast64_t bytes_written() override;
 
-      /// @todo This isn't an acutal override anymore, as event is not const, but it should be
-      virtual void write_event( HepMC3::GenEvent* ev );
+      virtual void write_event( HepMC3::GenEvent* ev ) override;
 
     protected:
 

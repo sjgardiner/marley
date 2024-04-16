@@ -70,7 +70,7 @@ std::shared_ptr< marley::OutputFile > marley::OutputFile::make_OutputFile(
   else if ( format == "root" ) {
     return std::make_shared< marley::OutputFileRoot >( output_config );
   }
-  else if ( format == "plain_root" ) {
+  else if ( format == "plain-root" ) {
     return std::make_shared< marley::OutputFilePlainRoot >( output_config );
   }
   #endif
