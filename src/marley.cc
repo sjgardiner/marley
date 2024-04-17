@@ -175,6 +175,7 @@ namespace {
     for ( const auto& file : output_files ) {
       temp_oss << "Data written to " << file->name() << ' '
         << marley_utils::num_bytes_to_string( file->bytes_written(), 2 )
+        << " (estimate)"
         << "\033[K\n";
     }
 

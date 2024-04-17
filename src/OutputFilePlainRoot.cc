@@ -44,7 +44,7 @@
 #include "marley/JSONConfig.hh"
 #include "marley/hepmc3_utils.hh"
 #include "marley/marley_utils.hh"
-
+#include "marley/Logger.hh"
 
 #ifdef USE_ROOT
   #include "marley/RootJSONConfig.hh"
@@ -83,22 +83,21 @@ namespace {
 marley::OutputFilePlainRoot::OutputFilePlainRoot( const marley::JSON& output_config )
   : marley::OutputFile( output_config )
 {
-  // We still need to initialise the HepMC3 objects, as our strategy is to produce
-  // the plain ROOT file by applying marsum logic to the HepMC3 format.
-  // this->open();
-  reader_ = std::make_shared< HepMC3::ReaderAscii >( stream_ );
-  writer_ = std::make_shared< HepMC3::WriterAscii >( stream_ );
+  format_ = Format::PLAIN_ROOT;
 
-  // Ensure that all floating-point values are output with full precision
-  writer_->set_precision( std::numeric_limits<double>::max_digits10 );
+  // As established this isn't really opening anything
+  this->open();
 
-  // Create the TFile and TTree pointers, and define the branches
-  /// @todo Maybe you should move this to the header? Idk
+  // Create the TFile and TTree pointers
   out_tfile_ = new TFile( name_.c_str(), "recreate" );
   out_tree_ = new TTree( "mst", "MARLEY summary tree" );
   // Set the current ROOT directory to the TFile
   out_tfile_->cd();
+ // Autosave after 100 kB of data is filled
+ // (done to get updates on the TTree size before it is written to disk)
+  //out_tree_->SetAutoSave(10000);
 
+  // Define the branches
   // projectile branches
   out_tree_->Branch( "pdgv", &pdgv_, "pdgv/I" );
   out_tree_->Branch( "Ev", &Ev_, "Ev/D" );
@@ -147,8 +146,7 @@ marley::OutputFilePlainRoot::OutputFilePlainRoot( const marley::JSON& output_con
   // Flux-averaged total cross section
   out_tree_->Branch( "xsec", &flux_avg_tot_xsec_, "xsec/D" );
 
-
-  // This is probably useless but here we go
+  // Clear the vectors (this is probably useless but here we go)
   PDGs_.clear();
   Es_.clear();
   KEs_.clear();
@@ -166,19 +164,18 @@ marley::OutputFilePlainRoot::~OutputFilePlainRoot() {
   out_tfile_->Close();
 }
 
-/// @todo check if this function is neccessary and if it is, implement it
+/// @todo This doesn't actually "open" anything, as in the ASCII case.
+/// Maintaining the name for consistency with the ASCII case,
+/// but this should be changed in the future.
 void marley::OutputFilePlainRoot::open() {
 
   bool file_exists = check_if_file_exists( name_ );
-
-  auto open_mode_flag = std::ios::in | std::ios::out | std::ios::trunc;
 
   if ( mode_ == Mode::OVERWRITE && file_exists && !force_ ) {
     bool overwrite = marley_utils::prompt_yes_no( "Overwrite file " + name_ );
     if ( !overwrite ) {
       MARLEY_LOG_INFO() << "Cancelling overwrite of output file \""
         << name_ << '\"';
-      open_mode_flag = std::ios::in | std::ios::out;
       mode_ = Mode::RESUME;
     }
   }
@@ -186,14 +183,11 @@ void marley::OutputFilePlainRoot::open() {
   if ( mode_ == Mode::RESUME ) {
     if ( !file_exists ) throw marley::Error( "Cannot resume run. Could"
       " not open the file \"" + name_ + '\"' );
-    else open_mode_flag = std::ios::in | std::ios::out;
   }
   else if ( mode_ != Mode::OVERWRITE ) {
     throw marley::Error( "Unrecognized file mode encountered in"
       " OutputFilePlainRoot::open()" );
   }
-
-  stream_.open( name_, open_mode_flag );
 
 }
 
@@ -201,14 +195,29 @@ void marley::OutputFilePlainRoot::open() {
 bool marley::OutputFilePlainRoot::resume( std::unique_ptr<marley::Generator>& gen,
   long& num_previous_events )
 {
+  if ( mode_ != Mode::RESUME ) {
+    throw marley::Error( "Cannot call OutputFilePlainRoot::resume() for an output"
+      " mode other than \"resume\"" );
+    return false;
+  }
+
   return false;
 }
-
-/// @todo Implement this function  
+ 
 int_fast64_t marley::OutputFilePlainRoot::bytes_written() {
-  // If the stream is open, then update the byte count. Otherwise, just
-  // use the saved value.
-  return 0;
+  // If the ROOT file is open, then update the byte count.
+  // We will use the byte count from the TTree as a (pretty accurate) estimate
+  // for the file size as we don't write to the file until
+  // the destructor is called.
+  // Once the file is closed, the byte count will be fixed.
+  // @todo: this last part is bullshit, fix it
+  if ( out_tfile_->IsOpen() ) {
+    byte_count_ = out_tree_->GetZipBytes();
+  } else {
+    std::filesystem::path p( name_ );
+    byte_count_ = std::filesystem::file_size( p );
+  }
+  return byte_count_;
 }
 
 void marley::OutputFilePlainRoot::write_event( HepMC3::GenEvent* ev ) {
@@ -216,9 +225,7 @@ void marley::OutputFilePlainRoot::write_event( HepMC3::GenEvent* ev ) {
   if ( !ev ) throw marley::Error( "Null pointer passed to"
     " OutputFilePlainRoot::write_event()" );
 
-  //writer_->write_event( *event );
-
-  // Instead of writing the event directly into ASCII, we "convert" it and write
+  // Instead of writing the event into ASCII, we "convert" it and write
   // it in plain ROOT format.
   auto projectile = marley_hepmc3::get_projectile( *ev );
   pdgv_ = projectile->pid();
@@ -324,4 +331,6 @@ void marley::OutputFilePlainRoot::write_event( HepMC3::GenEvent* ev ) {
   out_tree_->SetBranchAddress( "pzp", pZs_.data() );
 
   out_tree_->Fill();
+  // MARLEY_LOG_INFO() << "Event written to the ROOT file with total bytes " << out_tree_->GetTotBytes();
+  // MARLEY_LOG_INFO() << "Event written to the ROOT file with total Zipbytes " << out_tree_->GetZipBytes();
 }

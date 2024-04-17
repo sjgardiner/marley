@@ -51,18 +51,8 @@ namespace marley {
 
     protected:
 
-      /// Opens the owned std::fstream with the correct settings
+      /// Basic checks on the file before initializing
       virtual void open();
-
-      /// Stream used to read and write from the output file as needed
-      std::fstream stream_;
-
-      /// Helper object used to read back HepMC3 events for restoring
-      /// the generator state, etc.
-      std::shared_ptr< HepMC3::ReaderAscii > reader_;
-
-      /// Helper object used to produce standard ASCII HepMC3 output
-      std::shared_ptr< HepMC3::WriterAscii > writer_;
 
       /// Storage for the number of bytes written to disk
       int_fast64_t byte_count_ = 0;
