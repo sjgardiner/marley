@@ -40,7 +40,7 @@ namespace marley {
 
       OutputFilePlainRoot( const JSON& output_config );
 
-      virtual ~OutputFilePlainRoot() = default;
+      virtual ~OutputFilePlainRoot();
 
       virtual bool resume( std::unique_ptr<marley::Generator>& gen,
         long& num_previous_events ) override;

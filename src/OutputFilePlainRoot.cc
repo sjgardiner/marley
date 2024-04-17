@@ -96,6 +96,8 @@ marley::OutputFilePlainRoot::OutputFilePlainRoot( const marley::JSON& output_con
   /// @todo Maybe you should move this to the header? Idk
   out_tfile_ = new TFile( name_.c_str(), "recreate" );
   out_tree_ = new TTree( "mst", "MARLEY summary tree" );
+  // Set the current ROOT directory to the TFile
+  out_tfile_->cd();
 
   // projectile branches
   out_tree_->Branch( "pdgv", &pdgv_, "pdgv/I" );
@@ -154,6 +156,14 @@ marley::OutputFilePlainRoot::OutputFilePlainRoot( const marley::JSON& output_con
   pYs_.clear();
   pZs_.clear();
 
+}
+
+/// Implement the destructor
+marley::OutputFilePlainRoot::~OutputFilePlainRoot() {
+  // Write the TTree to the TFile
+  out_tree_->Write();
+  // Close the TFile
+  out_tfile_->Close();
 }
 
 /// @todo check if this function is neccessary and if it is, implement it
@@ -264,8 +274,13 @@ void marley::OutputFilePlainRoot::write_event( HepMC3::GenEvent* ev ) {
   auto parity_attr = residue->attribute< HepMC3::IntAttribute >( "parity" );
   par_ = parity_attr->value();
 
-  /// @todo Implement this
-  flux_avg_tot_xsec_ = 0.; 
+  /// @todo Move this to the destructor (as you only need it read once)
+  auto run_info = ev->run_info();
+  auto avg_xsec_attr = run_info->attribute< HepMC3::DoubleAttribute >(
+      "NuHepMC.FluxAveragedTotalCrossSection" );
+  flux_avg_tot_xsec_ = avg_xsec_attr->value()
+      / marley_utils::fm2_to_picobarn
+      * marley_utils::fm2_to_minus40_cm2 * 1e2;
 
   np_ = 0;
   const auto& particles = ev->particles();
