@@ -31,11 +31,6 @@
 #include "TFile.h"
 #include "TTree.h"
 // #include "TDirectory.h"
-// #include "TVersionCheck.h"
-// #include "TClass.h"
-// #include "TObject.h"
-// #include "TStorage.h"
-// #include "TDataType.h"
 
 // MARLEY includes
 #include "marley/OutputFilePlainRoot.hh"
@@ -53,32 +48,6 @@
   #error TEMPORARY: Building this class (OutputFilePlainRoot) requires ROOT
 #endif
 
-namespace {
-
-  constexpr char DUMMY_CHAR = 'a';
-
-  // Moves to the end of an ASCII-format file containing HepMC3 events and
-  // opened as the input std::fstream. Backs up until the start of the last
-  // HepMC3 event stored in the file. The stream is left in a state that is
-  // ready for reading in the last event using, e.g., HepMC3::ReaderAscii.
-  void seek_to_last_genevent( std::fstream& stream ) {
-    char c = DUMMY_CHAR;
-    char old_c = DUMMY_CHAR;
-    stream.seekg( 0, std::ios::end );
-    std::streampos size = stream.tellg();
-    for ( int i = 1; i <= size; ++i ) {
-      stream.seekg( -i, std::ios::end );
-      old_c = c;
-      stream.get( c );
-      if ( c == '\n' && old_c == 'E' ) {
-        stream.seekg( -i + 1, std::ios::end );
-        stream.clear();
-        break;
-      }
-    }
-  }
-
-}
 
 marley::OutputFilePlainRoot::OutputFilePlainRoot( const marley::JSON& output_config )
   : marley::OutputFile( output_config )
@@ -164,9 +133,6 @@ marley::OutputFilePlainRoot::~OutputFilePlainRoot() {
   out_tfile_->Close();
 }
 
-/// @todo This doesn't actually "open" anything, as in the ASCII case.
-/// Maintaining the name for consistency with the ASCII case,
-/// but this should be changed in the future.
 void marley::OutputFilePlainRoot::open() {
 
   bool file_exists = check_if_file_exists( name_ );
@@ -181,25 +147,64 @@ void marley::OutputFilePlainRoot::open() {
   }
 
   if ( mode_ == Mode::RESUME ) {
-    if ( !file_exists ) throw marley::Error( "Cannot resume run. Could"
-      " not open the file \"" + name_ + '\"' );
+    throw marley::Error( "Resume mode not supported for plain ROOT files (in"
+      " OutputFilePlainRoot::open() )" );
   }
+
   else if ( mode_ != Mode::OVERWRITE ) {
     throw marley::Error( "Unrecognized file mode encountered in"
       " OutputFilePlainRoot::open()" );
   }
 
+  // Create/open the ROOT file
+  out_tfile_ = new TFile( name_.c_str(), "recreate" );
 }
 
 /// @todo Implement this function
 bool marley::OutputFilePlainRoot::resume( std::unique_ptr<marley::Generator>& gen,
   long& num_previous_events )
 {
-  if ( mode_ != Mode::RESUME ) {
-    throw marley::Error( "Cannot call OutputFilePlainRoot::resume() for an output"
-      " mode other than \"resume\"" );
-    return false;
-  }
+
+  /// For now, we don't support resuming from a plain ROOT file 
+
+  // If the file exists, check that the TTree is there and that it has the
+  // correct format.
+  // TFile* temp_file = new TFile( name_.c_str(), "read" );
+  // TTree* temp_tree = nullptr;
+  // if ( temp_file->IsOpen() ) {
+  //   temp_tree = (TTree*)temp_file->Get( "mst" );
+
+  //   if ( temp_tree ) {
+  //     // Check that the branches are there
+  //     if ( temp_tree->GetBranch("pdgv") && temp_tree->GetBranch("Ev") &&
+  //       temp_tree->GetBranch("KEv") && temp_tree->GetBranch("pxv") &&
+  //       temp_tree->GetBranch("pyv") && temp_tree->GetBranch("pzv") &&
+  //       temp_tree->GetBranch("pdgt") && temp_tree->GetBranch("Mt") &&
+  //       temp_tree->GetBranch("pdgl") && temp_tree->GetBranch("El") &&
+  //       temp_tree->GetBranch("KEl") && temp_tree->GetBranch("pxl") &&
+  //       temp_tree->GetBranch("pyl") && temp_tree->GetBranch("pzl") &&
+  //       temp_tree->GetBranch("pdgr") && temp_tree->GetBranch("Er") &&
+  //       temp_tree->GetBranch("KEr") && temp_tree->GetBranch("pxr") &&
+  //       temp_tree->GetBranch("pyr") && temp_tree->GetBranch("pzr") &&
+  //       temp_tree->GetBranch("Ex") && temp_tree->GetBranch("twoJ") &&
+  //       temp_tree->GetBranch("parity") && temp_tree->GetBranch("np") &&
+  //       temp_tree->GetBranch("pdgp") && temp_tree->GetBranch("Ep") &&
+  //       temp_tree->GetBranch("KEp") && temp_tree->GetBranch("pxp") &&
+  //       temp_tree->GetBranch("pyp") && temp_tree->GetBranch("pzp") &&
+  //       temp_tree->GetBranch("xsec") ) {
+  //       // Everything is good
+  //     } else {
+  //       throw marley::Error( "The ROOT file \"" + name_ + "\" does not"
+  //         " have the correct format for a MARLEY summary tree" );
+  //     }
+  //   } else {
+  //     throw marley::Error( "The ROOT file \"" + name_ + "\" does not"
+  //       " contain a TTree with the name \"mst\"" );
+  //   }
+  // } else {
+  //   throw marley::Error( "Could not open the ROOT file \"" + name_
+  //     + "\" for reading" );
+  // }
 
   return false;
 }
