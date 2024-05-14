@@ -65,6 +65,7 @@ std::map< marley::Generator::CRPADiscreteMode, std::string > marley::Generator::
 {
   { marley::Generator::CRPADiscreteMode::IGNORE, "ignore" },
   { marley::Generator::CRPADiscreteMode::MIRROR, "mirror" },
+  { marley::Generator::CRPADiscreteMode::ACCUMULATE, "accumulate" }
 };
 
 // Print the MARLEY logo to the logger stream(s) if you haven't already.

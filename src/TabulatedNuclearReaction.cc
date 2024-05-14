@@ -174,7 +174,7 @@ std::shared_ptr< HepMC3::GenEvent > marley::TabulatedNuclearReaction
   double unbound_threshold = mt.unbound_threshold( pdg_d_ );
 
   // Flag to indicate whether we have dealt witht the CRPA strength leak
-  bool crpa_strength_sorted = false;
+  bool dealt_with_crpa_strength_leak = false;
 
   do{
     Ec = Ea - w;
@@ -210,8 +210,6 @@ std::shared_ptr< HepMC3::GenEvent > marley::TabulatedNuclearReaction
     // @Pablo: If the excitation energy Ex is below the unbound threshold...
 
     // If crpa_discrete_mode_ is set to MIRROR, we mirror around the unbound threshold. 
-    // This is a temporary fix to avoid CRPA 
-    // strength leakage from the continuum into the discrete levels, which we don't want.
     // Update w (energy transfer) if the excitation energy is below the unbound threshold
     if (gen.crpa_discrete_mode() == marley::Generator::CRPADiscreteMode::MIRROR) {
       if ( Ex < unbound_threshold ) {
@@ -223,14 +221,31 @@ std::shared_ptr< HepMC3::GenEvent > marley::TabulatedNuclearReaction
           "Mirroring the energy transfer around the unbound threshold.";
       }
       else {
-        crpa_strength_sorted = true;
+        dealt_with_crpa_strength_leak = true;
       }
     }
-    else if (gen.crpa_discrete_mode() == marley::Generator::CRPADiscreteMode::IGNORE) {
-      crpa_strength_sorted = true;
+
+    // If crpa_discrete_mode_ is set to ACCUMULATE, we sample exactly at the unbound threshold
+    // if the excitation energy is below the unbound threshold.
+    if (gen.crpa_discrete_mode() == marley::Generator::CRPADiscreteMode::ACCUMULATE) {
+      if ( Ex < unbound_threshold ) {
+        double delta = unbound_threshold - Ex;
+        w += delta;
+
+        // Print message to debug
+        MARLEY_LOG_DEBUG() << "Excitation energy " << Ex << " MeV is below the unbound threshold " << unbound_threshold << " MeV. "
+          "Sampling exactly at the unbound threshold.";
+      }
+      else {
+        dealt_with_crpa_strength_leak = true;
+      }
     }
 
-  } while ( ! crpa_strength_sorted );
+    else if (gen.crpa_discrete_mode() == marley::Generator::CRPADiscreteMode::IGNORE) {
+      dealt_with_crpa_strength_leak = true;
+    }
+
+  } while ( ! dealt_with_crpa_strength_leak );
 
   // TODO: add some sanity-checking here for the excitation energy
 

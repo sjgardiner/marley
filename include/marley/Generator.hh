@@ -59,9 +59,9 @@ namespace marley {
       /// @brief Create a Generator using default settings
       Generator();
 
-      /// @brief Enumeration of the possible methods for handling CRPA strenght leakage
+      /// @brief Enumeration of the possible methods for handling CRPA strength leakage
       /// below the unbound threshold
-      enum class CRPADiscreteMode { IGNORE, MIRROR };
+      enum class CRPADiscreteMode { IGNORE, MIRROR, ACCUMULATE };
 
       /// @brief Create an Event using the NeutrinoSource, Target, Reaction,
       /// and StructureDatabase objects owned by this Generator
