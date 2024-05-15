@@ -115,14 +115,6 @@ marley::OutputFilePlainRoot::OutputFilePlainRoot( const marley::JSON& output_con
   // Flux-averaged total cross section
   out_tree_->Branch( "xsec", &flux_avg_tot_xsec_, "xsec/D" );
 
-  // Clear the vectors (this is probably useless but here we go)
-  PDGs_.clear();
-  Es_.clear();
-  KEs_.clear();
-  pXs_.clear();
-  pYs_.clear();
-  pZs_.clear();
-
 }
 
 /// Implement the destructor
@@ -229,6 +221,14 @@ void marley::OutputFilePlainRoot::write_event( HepMC3::GenEvent* ev ) {
 
   if ( !ev ) throw marley::Error( "Null pointer passed to"
     " OutputFilePlainRoot::write_event()" );
+
+  // Clear the vectors (this is probably useless but here we go)
+  PDGs_.clear();
+  Es_.clear();
+  KEs_.clear();
+  pXs_.clear();
+  pYs_.clear();
+  pZs_.clear();
 
   // Instead of writing the event into ASCII, we "convert" it and write
   // it in plain ROOT format.

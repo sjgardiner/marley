@@ -227,7 +227,7 @@ std::shared_ptr< HepMC3::GenEvent > marley::TabulatedNuclearReaction
 
     // If crpa_discrete_mode_ is set to ACCUMULATE, we sample exactly at the unbound threshold
     // if the excitation energy is below the unbound threshold.
-    if (gen.crpa_discrete_mode() == marley::Generator::CRPADiscreteMode::ACCUMULATE) {
+    else if (gen.crpa_discrete_mode() == marley::Generator::CRPADiscreteMode::ACCUMULATE) {
       if ( Ex < unbound_threshold ) {
         double delta = unbound_threshold - Ex;
         w += delta;
