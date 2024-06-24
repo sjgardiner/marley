@@ -122,7 +122,7 @@ void marley::TabulatedXSec::add_table( const std::string& file_name )
 }
 
 double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
-  double cos_theta, const marley::TabulatedXSec::MultipoleLabel& ml )
+  double cos_theta, const marley::TabulatedXSec::MultipoleLabel& ml ) const
 {
   int helicity = DUMMY_HELICITY;
 

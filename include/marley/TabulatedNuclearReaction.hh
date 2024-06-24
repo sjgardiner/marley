@@ -40,6 +40,9 @@ namespace marley {
 
       virtual double total_xs( int pdg_a, double KEa ) const override;
 
+      inline const TabulatedXSec& get_tabulated_xsec() const
+        { return *xsec_; }
+
     protected:
 
       virtual void set_description() override;

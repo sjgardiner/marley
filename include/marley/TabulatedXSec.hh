@@ -113,7 +113,7 @@ namespace marley {
       };
 
       double diff_xsec( int pdg_a, double KE_a, double omega, double cos_theta,
-        const MultipoleLabel& ml );
+        const MultipoleLabel& ml ) const;
 
       void add_table( unsigned J, marley::Parity Pi,
         const std::string& file_name );
