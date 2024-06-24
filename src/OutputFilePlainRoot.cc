@@ -15,6 +15,7 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 // Standard library includes
+#include <filesystem>
 #include <limits>
 #include <string>
 
@@ -30,24 +31,14 @@
 // ROOT includes
 #include "TFile.h"
 #include "TTree.h"
-// #include "TDirectory.h"
 
 // MARLEY includes
 #include "marley/OutputFilePlainRoot.hh"
 #include "marley/Error.hh"
 #include "marley/Generator.hh"
-#include "marley/JSONConfig.hh"
 #include "marley/hepmc3_utils.hh"
 #include "marley/marley_utils.hh"
 #include "marley/Logger.hh"
-
-#ifdef USE_ROOT
-  #include "marley/RootJSONConfig.hh"
-#endif
-#ifndef USE_ROOT
-  #error TEMPORARY: Building this class (OutputFilePlainRoot) requires ROOT
-#endif
-
 
 marley::OutputFilePlainRoot::OutputFilePlainRoot( const marley::JSON& output_config )
   : marley::OutputFile( output_config )
@@ -157,7 +148,7 @@ bool marley::OutputFilePlainRoot::resume( std::unique_ptr<marley::Generator>& ge
   long& num_previous_events )
 {
 
-  /// For now, we don't support resuming from a plain ROOT file 
+  /// For now, we don't support resuming from a plain ROOT file
 
   // If the file exists, check that the TTree is there and that it has the
   // correct format.
@@ -200,7 +191,7 @@ bool marley::OutputFilePlainRoot::resume( std::unique_ptr<marley::Generator>& ge
 
   return false;
 }
- 
+
 int_fast64_t marley::OutputFilePlainRoot::bytes_written() {
   // If the ROOT file is open, then update the byte count.
   // We will use the byte count from the TTree as a (pretty accurate) estimate

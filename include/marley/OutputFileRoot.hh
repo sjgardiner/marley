@@ -49,7 +49,7 @@ namespace marley {
       inline virtual int_fast64_t bytes_written() override
         { return out_tfile_->GetBytesWritten(); }
 
-      virtual void write_event( const HepMC3::GenEvent* event ) override;
+      virtual void write_event( HepMC3::GenEvent* event ) override;
 
     protected:
 

@@ -138,7 +138,7 @@ bool marley::OutputFileRoot::resume(
   return true;
 }
 
-void marley::OutputFileRoot::write_event( const HepMC3::GenEvent* event ) {
+void marley::OutputFileRoot::write_event( HepMC3::GenEvent* event ) {
 
   if ( !event ) throw marley::Error( "Null pointer passed to"
     " OutputFileRoot::write_event()" );
