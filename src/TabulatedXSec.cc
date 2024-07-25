@@ -226,7 +226,7 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
 }
 
 double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
-  const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max )
+  const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max ) const
 {
   // Set the maximum differential cross section to zero to start
   diff_max = 0.;
@@ -321,7 +321,7 @@ double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
 }
 
 double marley::TabulatedXSec::integral( int pdg_a, double KEa,
-  const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max )
+  const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max ) const
 {
   // First attempt to look up a pair of ChebyshevInterpolatingFunction
   // objects for the given projectile PDG code and multipole
@@ -355,7 +355,7 @@ double marley::TabulatedXSec::integral( int pdg_a, double KEa,
   return this->compute_integral( pdg_a, KEa, ml, diff_max );
 }
 
-double marley::TabulatedXSec::integral( int pdg_a, double KEa )
+double marley::TabulatedXSec::integral( int pdg_a, double KEa ) const
 {
   double integ = 0.;
   for ( const auto& pair : responses_ ) {

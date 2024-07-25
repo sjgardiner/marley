@@ -125,9 +125,9 @@ namespace marley {
         const { return responses_; }
 
       double integral( int pdg_a, double KEa, const MultipoleLabel& ml,
-        double& diff_max );
+        double& diff_max ) const;
 
-      double integral( int pdg_a, double KEa );
+      double integral( int pdg_a, double KEa ) const;
 
       void optimize( int pdg_a, double max_KEa );
 
@@ -135,7 +135,7 @@ namespace marley {
 
       // Helper function for integral that does the actual integration
       double compute_integral( int pdg_a, double KEa, const MultipoleLabel& ml,
-        double& diff_max );
+        double& diff_max ) const;
 
       struct OptimizationMapKey {
         OptimizationMapKey( int pdg_a, MultipoleLabel ml )
