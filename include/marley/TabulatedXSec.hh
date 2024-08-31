@@ -22,6 +22,7 @@
 // MARLEY includes
 #include "marley/CoulombCorrector.hh"
 #include "marley/ChebyshevInterpolatingFunction.hh"
+#include "marley/LeptonFactors.hh"
 #include "marley/Parity.hh"
 #include "marley/Reaction.hh"
 #include "marley/ResponseTable.hh"
@@ -69,47 +70,6 @@ namespace marley {
           int p2 = static_cast<int>( ml.Pi_ );
           return p1 < p2;
         }
-      };
-
-      class LeptonFactors {
-
-        public:
-
-          LeptonFactors() {}
-
-          LeptonFactors( double vCC, double vLL, double vCL, double vT,
-            double vTprime ) : vCC_( vCC ), vLL_( vLL ), vCL_( vCL ),
-            vT_( vT ), vTprime_( vTprime ) {}
-
-          inline double vCC() const { return vCC_; }
-          inline double vLL() const { return vLL_; }
-          inline double vCL() const { return vCL_; }
-          inline double vT() const { return vT_; }
-          inline double vTprime() const { return vTprime_; }
-
-          inline void set_vCC( double val ) { vCC_ = val; }
-          inline void set_vLL( double val ) { vLL_ = val; }
-          inline void set_vCL( double val ) { vCL_ = val; }
-          inline void set_vT( double val ) { vT_ = val; }
-          inline void set_vTprime( double val ) { vTprime_ = val; }
-
-          // Scalar product with the corresponding nuclear responses
-          inline double operator*( const NuclearResponses& nr ) {
-            double product = 0.;
-            product += this->vCC_ * nr.RCC();
-            product += this->vLL_ * nr.RLL();
-            product += this->vCL_ * nr.RCL();
-            product += this->vT_ * nr.RT();
-            product += this->vTprime_ * nr.RTprime();
-            return product;
-          }
-
-        protected:
-          double vCC_ = 0.;
-          double vLL_ = 0.;
-          double vCL_ = 0.;
-          double vT_ = 0.;
-          double vTprime_ = 0.;
       };
 
       double diff_xsec( int pdg_a, double KE_a, double omega, double cos_theta,
