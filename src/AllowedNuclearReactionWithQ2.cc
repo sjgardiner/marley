@@ -329,7 +329,7 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
   // Common factors for both CC and NC differential cross sections to a discrete
   // nuclear level in the CM frame
   double diff_xsec_prefactor = ( marley_utils::GF2 / ( 2 * marley_utils::pi ) )
-    * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm * bessel_factor( kappa_cm );
+    * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm;
 
   // Apply extra factors based on the current process type
   if ( process_type_ == ProcessType::NeutrinoCC_Discrete
@@ -409,12 +409,12 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
     rTprime = 0.;
   }
   else if ( mat_el.type() == ME_Type::GAMOW_TELLER ) {
-    double FA = form_factor_.FA( Q2, marley_utils::M_A );
+    double FA = form_factor_.FA( Q2_eff, marley_utils::M_A );
     strength_eff *= FA*FA / marley_utils::g_A2;
 
-    double FP = form_factor_.FP( Q2, marley_utils::M_A );
-    double F1 = form_factor_.F1( Q2, marley_utils::M_V );
-    double F2 = form_factor_.F2( Q2, marley_utils::M_V );
+    double FP = form_factor_.FP( Q2_eff, marley_utils::M_A );
+    double F1 = form_factor_.F1( Q2_eff, marley_utils::M_V );
+    double F2 = form_factor_.F2( Q2_eff, marley_utils::M_V );
 
     double FPA = FP / FA;
     double F12A = ( F1 + 2. * marley_utils::m_nucleon * F2 ) / FA;
@@ -443,6 +443,9 @@ double marley::AllowedNuclearReactionWithQ2::total_xs(
   const marley::MatrixElement& mat_el, double KEa, double& beta_c_cm,
   bool check_max_E_level ) const
 {
+  if ( superallowed_ ) return 2. * this->diff_xs( mat_el, KEa, 0., beta_c_cm,
+    check_max_E_level );
+
   // Integrator object to integrate over the scattering angle
   static marley::Integrator integrator;
 
