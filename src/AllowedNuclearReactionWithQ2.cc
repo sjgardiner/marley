@@ -24,10 +24,12 @@
 #include "marley/AllowedNuclearReactionWithQ2.hh"
 #include "marley/Error.hh"
 #include "marley/Generator.hh"
+#include "marley/LeptonFactors.hh"
 #include "marley/Level.hh"
 #include "marley/Logger.hh"
 #include "marley/MatrixElement.hh"
-#include "marley/NucleusDecayer.hh"
+//#include "marley/NucleusDecayer.hh"
+#include "marley/NuclearResponses.hh"
 #include "marley/FormFactor.hh"
 #include "marley/Integrator.hh"
 
@@ -42,8 +44,8 @@ marley::AllowedNuclearReactionWithQ2::AllowedNuclearReactionWithQ2( ProcType pt,
   int pdg_a, int pdg_b, int pdg_c, int pdg_d, int q_d,
   const std::shared_ptr< std::vector<marley::MatrixElement> >& mat_els,
   const std::pair< std::vector<int>, std::vector<double> > nucleon_radii,
-  marley::CoulombCorrector::CoulombMode mode, marley::FormFactor::FFScalingMode ff_scaling_mode,
-  bool superallowed )
+  marley::CoulombCorrector::CoulombMode mode,
+  marley::FormFactor::FFScalingMode ff_scaling_mode, bool superallowed )
   : marley::NuclearReaction( pt, pdg_a, pdg_b, pdg_c, pdg_d, q_d ),
   matrix_elements_( mat_els ), nucleon_radii_( nucleon_radii ),
   coulomb_corrector_( pdg_c, pdg_d, mode ),
@@ -58,17 +60,17 @@ std::shared_ptr< HepMC3::GenEvent > marley::AllowedNuclearReactionWithQ2
 {
   // Check that the projectile supplied to this event is correct. If not, alert
   // the user that this event does not use the requested projectile.
-  if ( pdg_a != pdg_a_ ) throw marley::Error(std::string("Could")
-    + " not create this event. The requested projectile particle ID, "
-    + std::to_string(pdg_a) + ", does not match the projectile"
-    + " particle ID, " + std::to_string(pdg_a_) + ", in the reaction dataset.");
+  if ( pdg_a != pdg_a_ ) throw marley::Error( "Could not create this event."
+    " The requested projectile particle ID, " + std::to_string( pdg_a )
+    + ", does not match the projectile particle ID, " + std::to_string( pdg_a_ )
+    + ", in the reaction dataset." );
 
   // Sample a final residue energy level. First, check to make sure the given
   // projectile energy is above threshold for this reaction.
-  if ( KEa < KEa_threshold_ ) throw std::range_error(std::string("Could")
-    + " not create this event. Projectile kinetic energy " + std::to_string(KEa)
-    + " MeV is below the threshold value " + std::to_string(KEa_threshold_)
-    + " MeV.");
+  if ( KEa < KEa_threshold_ ) throw std::range_error( "Could not create"
+    " this event. Projectile kinetic energy " + std::to_string( KEa )
+    + " MeV is below the threshold value " + std::to_string( KEa_threshold_ )
+    + " MeV." );
 
   /// @todo Add more error checks to AllowedNuclearReaction::create_event() as
   /// necessary
@@ -81,12 +83,12 @@ std::shared_ptr< HepMC3::GenEvent > marley::AllowedNuclearReactionWithQ2
   // Its default constructor creates a single weight of 1.
   // We will always explicitly give it weights to use when sampling
   // levels, so we won't worry about its default behavior.
-  static std::discrete_distribution<size_t> ldist;
+  static std::discrete_distribution< size_t > ldist;
 
-  // Compute the total cross section for a transition to each individual nuclear
-  // level, and save the results in the level_weights vector (which will be
-  // cleared by summed_xs_helper() before being loaded with the cross sections).
-  // The summed_xs_helper() method can also be used for differential
+  // Compute the total cross section for a transition to each individual
+  // nuclear level, and save the results in the level_weights vector (which
+  // will be cleared by summed_xs_helper() before being loaded with the cross
+  // sections). The summed_xs_helper() method can also be used for differential
   // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy
   // cos_theta_c_cm value and request total cross sections by setting the last
   // argument to false.
@@ -111,7 +113,8 @@ std::shared_ptr< HepMC3::GenEvent > marley::AllowedNuclearReactionWithQ2
   }
 
   // Complain if the total cross section (the sum of all partial level cross
-  // sections) is zero or negative (the latter is just to cover all possibilities).
+  // sections) is zero or negative (the latter is just to cover all
+  // possibilities).
   if ( sum_of_xsecs <= 0. ) {
     throw marley::Error( "Could not create this event. All kinematically"
       " accessible levels for a projectile kinetic energy of "
@@ -207,7 +210,6 @@ std::shared_ptr< HepMC3::GenEvent > marley::AllowedNuclearReactionWithQ2
         // all of the spin values allowed by the GT selection rules.
         // Sample an allowed value assuming equipartition of spin. Use the
         // relative final nuclear level densities as sampling weights.
-
         std::vector<int> allowed_twoJs;
         std::vector<double> ld_weights;
 
@@ -250,7 +252,8 @@ std::shared_ptr< HepMC3::GenEvent > marley::AllowedNuclearReactionWithQ2
 
 // Compute the total reaction cross section (summed over all final nuclear
 // levels) in units of MeV^(-2) using the center of momentum frame.
-double marley::AllowedNuclearReactionWithQ2::total_xs( int pdg_a, double KEa ) const
+double marley::AllowedNuclearReactionWithQ2::total_xs( int pdg_a, double KEa )
+  const
 {
   double dummy_cos_theta = 0.;
   return summed_xs_helper( pdg_a, KEa, dummy_cos_theta, nullptr, false );
@@ -273,23 +276,15 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
   double& beta_c_cm, bool check_max_E_level ) const
 {
   // Check that the scattering cosine is within the physically meaningful range
-  // if ( std::abs(cos_theta_c_cm) > 1. ) return 0.;
-  // double beta_c_cm;
-  // double xsec = total_xs(mat_el, KEa, beta_c_cm, true);
-  // xsec *= mat_el.cos_theta_pdf(cos_theta_c_cm, beta_c_cm);
-  // return xsec;
-
-  // Check that the scattering cosine is within the physically meaningful range
   if ( std::abs(cos_theta_c_cm) > 1. ) return 0.;
 
-    // Don't bother to compute anything if the matrix element vanishes for this
-  // level
+  // Don't bother to compute anything if the matrix element vanishes
   if ( mat_el.strength() == 0. ) return 0.;
 
-  // Also don't proceed further if the reaction is below threshold (equivalently,
-  // if the requested level excitation energy E_level exceeds that maximum
-  // kinematically-allowed value). To avoid redundant checks of the threshold,
-  // skip this check if check_max_E_level is set to false.
+  // Also don't proceed further if the reaction is below threshold
+  // (equivalently, if the requested level excitation energy E_level exceeds
+  // that maximum kinematically-allowed value). To avoid redundant checks of
+  // the threshold, skip this check if check_max_E_level is set to false.
   if ( check_max_E_level ) {
     double max_E_level = max_level_energy( KEa );
     if ( mat_el.level_energy() > max_E_level ) return 0.;
@@ -297,104 +292,62 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
 
   // The final nuclear mass (before nuclear de-excitations) is the sum of the
   // ground state residue mass plus the excitation energy of the accessed level
-  /// @todo Check whether this is considering the "minus one electron" mass
+  // This includes a correction to the ground-state atomic mass to account for
+  // production of an ion by charged-current interactions (see the constructor
+  // of the NuclearReaction class)
   double md2 = std::pow( md_gs_ + mat_el.level_energy(), 2 );
 
   // Compute Mandelstam s (the square of the total CM frame energy)
   double s = std::pow( ma_ + mb_, 2 ) + 2.*mb_*KEa;
   double sqrt_s = std::sqrt( s );
 
-  // Compute CM frame total energies for two of the particles. Also
-  // compute the magnitude of the ejectile CM frame momentum.
+  // Compute some CM frame total energies and 3-momentum magnitudes
   double Eb_cm = ( s + mb_*mb_ - ma_*ma_ ) / ( 2. * sqrt_s );
+
+  double Ea_cm = sqrt_s - Eb_cm;
+  double pa_cm = marley_utils::real_sqrt( std::pow(Ea_cm, 2) - ma_*ma_ );
+
   double Ec_cm = ( s + mc_*mc_ - md2 ) / ( 2. * sqrt_s );
   double pc_cm = marley_utils::real_sqrt( std::pow(Ec_cm, 2) - mc_*mc_ );
 
-  // Compute the magnitude of the transferred energy omega and momentum q in the CM frame
-  double omega_cm = Ec_cm - KEa;
-  double kappa_cm = marley_utils::real_sqrt( std::pow( KEa, 2 ) + std::pow( pc_cm, 2 )
-    - 2 * KEa * pc_cm * cos_theta_c_cm );
-  double Q2 = -(std::pow( omega_cm, 2 ) - std::pow( kappa_cm, 2 ));
+  // Compute the CM frame value of the energy transfer (omega)
+  double omega_cm = Ea_cm - Ec_cm;
+
+  // Compute the CM frame value of the 3-momentum transfer magnitude (kappa)
+  double kappa_cm = marley_utils::real_sqrt( std::pow( pa_cm, 2 )
+    + std::pow( pc_cm, 2 ) - 2. * pa_cm * pc_cm * cos_theta_c_cm );
+
+  // Negative square of the 4-momentum transfer
+  double Q2 = kappa_cm*kappa_cm - omega_cm*omega_cm;
 
   // Compute the (dimensionless) speed of the ejectile in the CM frame
   beta_c_cm = pc_cm / Ec_cm;
 
-  // Compute the projections of the beta factors onto the z axis
-  double beta_c_cm_0 = (KEa * pc_cm * cos_theta_c_cm - std::pow(pc_cm, 2))
-    / kappa_cm / Ec_cm;
-  double beta_a_cm_0 = (KEa - pc_cm * cos_theta_c_cm) / kappa_cm;
-
   // CM frame total energy of the nuclear residue
   double Ed_cm = sqrt_s - Ec_cm;
 
-  // Dot product of the four-momenta of particles c and d
-  double pc_dot_pd = Ed_cm*Ec_cm + std::pow( pc_cm, 2 );
-
-  // Relative speed of particles c and d, computed with a manifestly
-  // Lorentz-invariant expression
-  double beta_rel_cd = marley_utils::real_sqrt(
-    std::pow(pc_dot_pd, 2) - mc_*mc_*md2 ) / pc_dot_pd;
-
-  // Differential cross section calculation
-  double diff_xsec;
-  // Common factors for the allowed approximation differential cross sections
-  // for both CC and NC reactions, including Q^2 dependence
+  // Common factors for both CC and NC differential cross sections to a discrete
+  // nuclear level in the CM frame
   double diff_xsec_prefactor = ( marley_utils::GF2 / ( 2 * marley_utils::pi ) )
     * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm * bessel_factor( kappa_cm );
-
-  // Apply extra factors based on the matrix element type and order in expansion
-  int not_superallowed = !superallowed_;
-  if ( mat_el.type() == ME_Type::FERMI ) {
-    // Fermi transitions
-    double diff_xsec_0 = 1. + beta_c_cm * cos_theta_c_cm;
-    double diff_xsec_1 = kappa_cm / marley_utils::m_nucleon
-                        * ( beta_c_cm_0 + beta_a_cm_0 ) * not_superallowed;
-    
-    diff_xsec = diff_xsec_prefactor *  std::pow( form_factor_.F1(Q2, marley_utils::M_V), 2 )
-                * ( diff_xsec_0 + diff_xsec_1 ) * mat_el.strength() / marley_utils::g_V2;
-  }
-  else if ( mat_el.type() == ME_Type::GAMOW_TELLER ) {
-    // Gamow-Teller transitions
-    double diff_xsec_0 = 1. - 1./3 * beta_c_cm * cos_theta_c_cm;
-    double diff_xsec_1 = -1./3 * kappa_cm / marley_utils::m_nucleon 
-                        * ( form_factor_.F1(Q2, marley_utils::M_V) + form_factor_.F2(Q2, marley_utils::M_V) ) 
-                        / form_factor_.GA(Q2, marley_utils::M_A)
-                        * ( beta_c_cm_0 - beta_a_cm_0 ) * not_superallowed;
-    double diff_xsec_2 = -1./3 * std::pow( kappa_cm / marley_utils::m_nucleon, 2)
-                        * form_factor_.GP(Q2, marley_utils::M_A) / form_factor_.GA(Q2, marley_utils::M_A)
-                        * ( 1 - beta_c_cm * cos_theta_c_cm + 2 * beta_c_cm_0 * beta_a_cm_0) * not_superallowed;
-    double diff_xsec_3 = -2./3 * kappa_cm * omega_cm / std::pow( marley_utils::m_nucleon, 2 )
-                        * form_factor_.GP(Q2, marley_utils::M_A) / form_factor_.GA(Q2, marley_utils::M_A)
-                        * ( beta_c_cm_0 + beta_a_cm_0 ) * not_superallowed;
-    
-    diff_xsec = diff_xsec_prefactor * std::pow( form_factor_.GA(Q2, marley_utils::M_A), 2 )
-                * ( diff_xsec_0 + diff_xsec_1 + diff_xsec_2 + diff_xsec_3 ) 
-                * mat_el.strength() / marley_utils::g_A2;
-
-    // MARLEY_LOG_DEBUG() << "Not superallowed: " << not_superallowed << superallowed_;
-    // MARLEY_LOG_DEBUG() << "Diff_xsec_0: " << diff_xsec_0;
-    // MARLEY_LOG_DEBUG() << "Diff_xsec_1: " << diff_xsec_1;
-    // MARLEY_LOG_DEBUG() << "Diff_xsec_2: " << diff_xsec_2;
-    // MARLEY_LOG_DEBUG() << "Diff_xsec_3: " << diff_xsec_3;
-    // MARLEY_LOG_DEBUG() << "Prefactor: " << diff_xsec_prefactor;
-    // MARLEY_LOG_DEBUG() << "Strength: " << mat_el.strength();
-    // MARLEY_LOG_DEBUG() << "form factor: " << form_factor_.GA(Q2, marley_utils::M_A);
-    // MARLEY_LOG_DEBUG() << "cos_theta_c_cm: " << cos_theta_c_cm << " beta_c_cm: " << beta_c_cm ;
-    // MARLEY_LOG_DEBUG() << "kappa: " << kappa_cm << " omega: " << omega_cm << " Q2: " << Q2;
-    // MARLEY_LOG_DEBUG() << "bessel factor: " << bessel_factor( kappa_cm );
-  }
-  else throw marley::Error( "Unrecognized matrix element type encountered in"
-    " marley::AllowedNuclearReaction::diff_xs()" );
 
   // Apply extra factors based on the current process type
   if ( process_type_ == ProcessType::NeutrinoCC_Discrete
     || process_type_ == ProcessType::AntiNeutrinoCC_Discrete )
   {
+    // Dot product of the four-momenta of particles c and d
+    double pc_dot_pd = Ed_cm*Ec_cm + std::pow( pc_cm, 2 );
+
+    // Relative speed of particles c and d, computed with a manifestly
+    // Lorentz-invariant expression
+    double beta_rel_cd = marley_utils::real_sqrt(
+      std::pow(pc_dot_pd, 2) - mc_*mc_*md2 ) / pc_dot_pd;
+
     // Calculate a Coulomb correction factor using either a Fermi function
     // or the effective momentum approximation
     double factor_C = coulomb_corrector_.coulomb_correction_factor(
       beta_rel_cd );
-    diff_xsec *= marley_utils::Vud2 * factor_C;
+    diff_xsec_prefactor *= marley_utils::Vud2 * factor_C;
   }
   else if ( process_type_ == ProcessType::NC_Discrete )
   {
@@ -402,15 +355,87 @@ double marley::AllowedNuclearReactionWithQ2::diff_xs(
     // correspond to CEvNS since they can only access the nuclear ground state)
     if ( mat_el.type() == ME_Type::FERMI ) {
       double Q_w = weak_nuclear_charge();
-      diff_xsec *= 0.25*std::pow( Q_w, 2 );
+      diff_xsec_prefactor *= 0.25*std::pow( Q_w, 2 );
     }
   }
-  else throw marley::Error( "Unrecognized or invalid process type encountered in"
-    " marley::AllowedNuclearReaction::total_xs()" );
+  else throw marley::Error( "Unrecognized or invalid process type encountered"
+    " in marley::AllowedNuclearReaction::diff_xs()" );
 
+  // We're done with the overall factors. Now compute the lepton part of the
+  // tensor contraction
+  // @todo Reduce code duplication with a similar implementation of these (in
+  // the lab frame) within the TabulatedXSec class. Note that there are
+  // different conventions used there.
+  int helicity = marley_utils::get_particle_helicity( pdg_a_ );
+  double sin2_theta_c_cm = 1. - cos_theta_c_cm*cos_theta_c_cm;
+  double vcc = 1. + beta_c_cm * cos_theta_c_cm;
+  double vll = vcc - 2.*Ea_cm*Ec_cm*sin2_theta_c_cm
+    * beta_c_cm*beta_c_cm/kappa_cm/kappa_cm;
+  double vcl = -1.* ( omega_cm*vcc/kappa_cm + mc_*mc_/Ec_cm/kappa_cm );
+  double vT = 1. - beta_c_cm*cos_theta_c_cm + Ea_cm*Ec_cm
+    * beta_c_cm*beta_c_cm*sin2_theta_c_cm/kappa_cm/kappa_cm;
+  double vTprime = helicity * ( (Ea_cm + Ec_cm)
+    * (1. - beta_c_cm*cos_theta_c_cm)/kappa_cm - mc_*mc_/kappa_cm/Ec_cm );
+  marley::LeptonFactors lf( vcc, vll, vcl, vT, vTprime );
+
+  // Now compute the nuclear responses. Copy the energy transfer, 3-momentum
+  // transfer magnitude, and Q^2 to effective values. These will be set to zero
+  // if we're working in the allowed approximation.
+  double omega_cm_eff = superallowed_ ? 0. : omega_cm;
+  double kappa_cm_eff = superallowed_ ? 0. : kappa_cm;
+  double Q2_eff = superallowed_ ? 0. : Q2;
+
+  // Calculate the adjusted transition strength appropriate for the chosen
+  // nuclear level
+  double strength_eff = mat_el.strength();
+  strength_eff *= this->bessel_factor( kappa_cm_eff );
+
+  // Scale the strength by the relevant nucleon form factor and divide by the
+  // relevant coupling constant. Use the scaled value to compute the nuclear
+  // responses relevant to the chosen transition type
+  double rCC, rCL, rLL, rTvv, rTaa, rTprime;
+  const double kM = kappa_cm_eff / marley_utils::m_nucleon;
+  const double k2M = kappa_cm_eff * kappa_cm_eff / marley_utils::m_nucleon;
+
+  if ( mat_el.type() == ME_Type::FERMI ) {
+    double F1 = form_factor_.F1( Q2_eff, marley_utils::M_V );
+    strength_eff *= F1*F1 / marley_utils::g_V2;
+
+    rCC = strength_eff;
+    rCL = strength_eff * kM;
+    rLL = strength_eff * kM * kM / 4.;
+    rTvv = 0.;
+    rTaa = 0.;
+    rTprime = 0.;
+  }
+  else if ( mat_el.type() == ME_Type::GAMOW_TELLER ) {
+    double FA = form_factor_.FA( Q2, marley_utils::M_A );
+    strength_eff *= FA*FA / marley_utils::g_A2;
+
+    double FP = form_factor_.FP( Q2, marley_utils::M_A );
+    double F1 = form_factor_.F1( Q2, marley_utils::M_V );
+    double F2 = form_factor_.F2( Q2, marley_utils::M_V );
+
+    double FPA = FP / FA;
+    double F12A = ( F1 + 2. * marley_utils::m_nucleon * F2 ) / FA;
+
+    rCC = strength_eff * kM * kM / 12. * ( 1. - 2.*omega_cm_eff*FPA
+      + omega_cm_eff*omega_cm_eff*FPA*FPA );
+    rCL = strength_eff * kM / 3. * ( 1. - (omega_cm_eff + 0.5*k2M)*FPA
+      + 0.5*omega_cm_eff*k2M*FPA*FPA );
+    rLL = strength_eff * ( 1./3. - k2M/3.*FPA + k2M*k2M/12.*FPA*FPA );
+    rTvv = 0.;
+    rTaa = strength_eff * ( 2./3. + kM*kM/6.*F12A*F12A );
+    rTprime = -1. * strength_eff * 2./3. * kM * F12A;
+  }
+  else throw marley::Error( "Unrecognized matrix element type encountered in"
+    " marley::AllowedNuclearReaction::diff_xs()" );
+
+  marley::NuclearResponses nr( rCC, rLL, rCL, rTvv, rTaa, rTprime );
+
+  double diff_xsec = diff_xsec_prefactor * ( lf * nr );
   return diff_xsec;
 }
-
 
 // Compute the total reaction cross section (in MeV^(-2)) for a transition to a
 // particular nuclear level using the center of momentum frame
@@ -418,27 +443,21 @@ double marley::AllowedNuclearReactionWithQ2::total_xs(
   const marley::MatrixElement& mat_el, double KEa, double& beta_c_cm,
   bool check_max_E_level ) const
 {
-  // Integrator object to integrate over the scattering angle  
+  // Integrator object to integrate over the scattering angle
   static marley::Integrator integrator;
 
-  // Don't bother to compute anything if the matrix element vanishes for this
-  // level
+  // Don't bother to compute anything if the matrix element vanishes
   if ( mat_el.strength() == 0. ) return 0.;
 
   // Integrate the differential cross section over cos_theta_c_cm
-  double total_xsec = integrator.num_integrate( 
-                      [ &mat_el, KEa, &beta_c_cm, check_max_E_level, this ]( double cos_theta_cm ) -> double
-                      { return this->diff_xs( mat_el, KEa, cos_theta_cm, beta_c_cm, check_max_E_level ); },
-                       -1., 1. );
-  // double total_xsec = integrator.num_integrate( 
-  //                   [  this ]( double cos_theta_cm ) -> double
-  //                   { return cos_theta_cm * cos_theta_cm; },
-  //                     -1., 1. );
-  //double total_xsec = 0.;
-  //double dummy = diff_xs( mat_el, KEa, 0.5, beta_c_cm, check_max_E_level );
+  double total_xsec = integrator.num_integrate(
+    [ &mat_el, KEa, &beta_c_cm, check_max_E_level, this ](
+      double cos_theta_cm ) -> double
+    { return this->diff_xs( mat_el, KEa, cos_theta_cm, beta_c_cm,
+      check_max_E_level ); }, -1., 1.
+  );
 
-  // DEBUG: print the total cross section for this level
-  MARLEY_LOG_DEBUG() << "Chirp " << description_
+  MARLEY_LOG_DEBUG() << "total xsec " << description_
     << " to level with energy " << mat_el.level_energy() << " MeV is "
     << total_xsec << " MeV^(-2).";
 
@@ -446,16 +465,16 @@ double marley::AllowedNuclearReactionWithQ2::total_xs(
 }
 
 // Helper function for total_xs and diff_xs()
-double marley::AllowedNuclearReactionWithQ2::summed_xs_helper( int pdg_a, double KEa,
-  double cos_theta_c_cm, std::vector<double>* level_xsecs, bool differential )
-  const
+double marley::AllowedNuclearReactionWithQ2::summed_xs_helper( int pdg_a,
+  double KEa, double cos_theta_c_cm, std::vector<double>* level_xsecs,
+  bool differential ) const
 {
   // Check that the projectile supplied to this event is correct. If not,
   // return a total cross section of zero since this reaction is not available
   // for the given projectile.
   /// @todo Consider whether you should use an exception if pdg_a != pdg_a_
   if ( pdg_a != pdg_a_ ) return 0.;
-  
+
   // If we're evaluating a differential cross section, check that the
   // scattering cosine is within the physically meaningful range. If it's
   // not, then just return 0.
@@ -491,8 +510,8 @@ double marley::AllowedNuclearReactionWithQ2::summed_xs_helper( int pdg_a, double
       double beta_c_cm = 0.;
       double partial_xsec;
 
-      // If a differential cross section (d\sigma / d\cos\theta_{CM})
-      // is desired, then multiply by the appropriate angular factor
+      // Compute either the total or differential (d\sigma / d\cos\theta_{CM})
+      // cross section as requested
       if ( differential ) {
         partial_xsec = diff_xs( mat_el, KEa, cos_theta_c_cm, beta_c_cm, false );
       } else {
@@ -523,14 +542,15 @@ double marley::AllowedNuclearReactionWithQ2::summed_xs_helper( int pdg_a, double
 }
 
 // Bessel factor calculation
-double marley::AllowedNuclearReactionWithQ2::bessel_factor( double kappa_cm ) const
+double marley::AllowedNuclearReactionWithQ2::bessel_factor( double kappa_cm )
+  const
 {
   // If kappa is zero, return 1. to avoid division by zero.
   if ( kappa_cm == 0. ) return 1.;
 
   // If the scaling mode is set to flat, return 1.
-  if ( form_factor_.ff_scaling_mode() == marley::FormFactor::FFScalingMode::FLAT )
-    return 1.;
+  if ( form_factor_.ff_scaling_mode()
+    == marley::FormFactor::FFScalingMode::FLAT ) return 1.;
 
   // If the nucleon radii pair is empty, give a warning and return 1.
   if ( nucleon_radii_.first.empty() || nucleon_radii_.second.empty() ) {
@@ -546,10 +566,13 @@ double marley::AllowedNuclearReactionWithQ2::bessel_factor( double kappa_cm ) co
   // Set the nucleon type depending on the process type
   if ( process_type_ == ProcessType::NeutrinoCC_Discrete ) {
     nucleon_limit = marley_utils::get_particle_Z( pdg_b_ );
-  } else if ( process_type_ == ProcessType::AntiNeutrinoCC_Discrete ) {
-    nucleon_limit = marley_utils::get_particle_A( pdg_b_ ) - marley_utils::get_particle_Z( pdg_b_ );
-  } else {
-    // Throw an error 
+  }
+  else if ( process_type_ == ProcessType::AntiNeutrinoCC_Discrete ) {
+    nucleon_limit = marley_utils::get_particle_A( pdg_b_ )
+      - marley_utils::get_particle_Z( pdg_b_ );
+  }
+  else {
+    // Throw an error
     /// @todo Fix for NC reactions
     throw marley::Error( "Unrecognized or invalid process type encountered in"
       " marley::AllowedNuclearReaction::bessel_factor()" );
@@ -559,19 +582,14 @@ double marley::AllowedNuclearReactionWithQ2::bessel_factor( double kappa_cm ) co
     int degeneracy = nucleon_radii_.first.at(i);
     double radius = nucleon_radii_.second.at(i);
 
-    int level_i_count = (nucleon_count + degeneracy) <= nucleon_limit ? degeneracy 
-                        : nucleon_limit - nucleon_count;
+    int level_i_count = (nucleon_count + degeneracy) <= nucleon_limit
+      ? degeneracy : nucleon_limit - nucleon_count;
     nucleon_count += level_i_count;
-    bessel_sum += level_i_count * std::sin( kappa_cm * radius ) / ( kappa_cm * radius );
-    // MARLEY_LOG_DEBUG() << "Nucleon limit: " << nucleon_limit;
-    // MARLEY_LOG_DEBUG() << "radius: " << radius << " degeneracy: " << degeneracy;
-    // MARLEY_LOG_DEBUG() << "level_i_count: " << level_i_count << " nucleon_count: " << nucleon_count;
-
+    bessel_sum += level_i_count * std::sin( kappa_cm * radius )
+      / ( kappa_cm * radius );
   }
-  // MARLEY_LOG_DEBUG() << "size " << nucleon_radii_.first.size() << " " << nucleon_radii_.second.size();
-  // MARLEY_LOG_DEBUG() << "Bessel sum: " << bessel_sum;
 
-  return (bessel_sum / nucleon_limit) * (bessel_sum / nucleon_limit);
+  return std::pow( bessel_sum / nucleon_limit, 2 );
 }
 
 
@@ -584,7 +602,7 @@ double marley::AllowedNuclearReactionWithQ2::sample_cos_theta_c_cm(
   // "on the fly"
   double max = marley_utils::UNKNOWN_MAX;
   return gen.rejection_sample(
-    [ &mat_el, KEa, &beta_c_cm, this ]( double cos_theta_cm ) -> double 
+    [ &mat_el, KEa, &beta_c_cm, this ]( double cos_theta_cm ) -> double
     { return this->diff_xs( mat_el, KEa, cos_theta_cm, beta_c_cm, false ); },
     -1., 1., max );
 }

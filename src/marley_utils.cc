@@ -540,6 +540,37 @@ std::string marley_utils::nucid_to_symbol(std::string nucid) {
   return marley_utils::trim_copy(nucid);
 }
 
+// Assign a helicity value based on the PDG code and check its validity
+int marley_utils::get_particle_helicity( const int pdg ) {
+
+  // Unphysical, just used as a placeholder
+  constexpr int DUMMY_HELICITY = 0;
+  // Helicity value for antineutrinos (right-handed)
+  constexpr int RIGHT_HANDED = 1;
+  // Helicity value for neutrinos (left-handed)
+  constexpr int LEFT_HANDED = -1;
+
+  if ( pdg == marley_utils::ELECTRON_NEUTRINO
+    || pdg == marley_utils::MUON_NEUTRINO
+    || pdg == marley_utils::TAU_NEUTRINO )
+  {
+    // All Standard Model neutrinos are left-handed
+    return LEFT_HANDED;
+  }
+  else if ( pdg == marley_utils::ELECTRON_ANTINEUTRINO
+    || pdg == marley_utils::MUON_ANTINEUTRINO
+    || pdg == marley_utils::TAU_ANTINEUTRINO )
+  {
+    // All Standard Model antineutrinos are right-handed
+    return RIGHT_HANDED;
+  }
+  else throw marley::Error( "Handling of particles with PDG code = "
+    + std::to_string(pdg) + " is unimplemented in marley_utils::"
+    "get_particle_helicity()" );
+
+  return DUMMY_HELICITY;
+}
+
 // Converts an ENSDF nucid to an atomic number. Currently, no checking is done
 // to see if the string is a valid nucid.
 int marley_utils::nucid_to_Z(std::string nucid) {

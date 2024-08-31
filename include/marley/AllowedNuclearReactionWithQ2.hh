@@ -53,12 +53,12 @@ namespace marley {
       /// corrections for the reaction cross section
       /// @param ff_scaling_mode Indicates the method to use when scaling
       /// the nuclear form factors with Q<sup>2</sup> in the matrix elements
-      AllowedNuclearReactionWithQ2( ProcessType pt, int pdg_a, int pdg_b, int pdg_c,
-        int pdg_d, int q_d,
+      AllowedNuclearReactionWithQ2( ProcessType pt, int pdg_a, int pdg_b,
+        int pdg_c, int pdg_d, int q_d,
         const std::shared_ptr<std::vector<marley::MatrixElement> >& mat_els,
         const std::pair< std::vector<int>, std::vector<double> > nucleon_radii,
-        CoulombCorrector::CoulombMode mode, FormFactor::FFScalingMode ff_scaling_mode,
-        bool superallowed);
+        CoulombCorrector::CoulombMode mode,
+        FormFactor::FFScalingMode ff_scaling_mode, bool superallowed );
 
       virtual std::shared_ptr< HepMC3::GenEvent > create_event(
         int particle_id_a, double KEa, marley::Generator& gen ) const override;
@@ -85,7 +85,8 @@ namespace marley {
       /// @param cos_theta_c_cm Ejectile scattering cosine as measured
       /// in the CM frame
       double diff_xs( const marley::MatrixElement& mat_el, double KEa,
-        double cos_theta_c_cm, double& beta_c_cm, bool check_max_E_level ) const;
+        double cos_theta_c_cm, double& beta_c_cm,
+        bool check_max_E_level ) const;
 
       /// @brief Differential cross section
       /// @f$d\sigma/d\cos\theta_{c}^{\mathrm{CM}}@f$
@@ -119,7 +120,7 @@ namespace marley {
       double bessel_factor( double kappa ) const;
 
       /// Allows access to the owned vector of MatrixElement objects
-      inline const std::vector<marley::MatrixElement>& matrix_elements() const
+      inline const std::vector< marley::MatrixElement >& matrix_elements() const
         { return *matrix_elements_; }
 
     protected:
@@ -165,8 +166,8 @@ namespace marley {
       /// transitions that may be caused by this reaction
       std::shared_ptr< std::vector<marley::MatrixElement> > matrix_elements_;
 
-      /// @brief Pair of vectors containg the mean radius of the nucleon wavefunctions
-      /// and the degeneracies for each nuclear level
+      /// @brief Pair of vectors containg the mean radius of the nucleon
+      /// wavefunctions and the degeneracies for each nuclear level
       std::pair< std::vector<int>, std::vector<double> > nucleon_radii_;
 
       /// @brief Object that handles calculations of Coulomb correction factors
@@ -175,7 +176,8 @@ namespace marley {
       /// @brief Object that handles calculations of nuclear form factors
       FormFactor form_factor_;
 
-      /// @brief Flag that indicates whether to include aditional terms beyond the q->0 limit
+      /// @brief Flag that indicates whether to include aditional terms beyond
+      /// the q->0 limit
       bool superallowed_;
   };
 

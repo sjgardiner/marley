@@ -206,6 +206,9 @@ namespace marley_utils {
     return is_a_lepton;
   }
 
+  // Assign a helicity value based on the PDG code and check its validity
+  int get_particle_helicity( const int pdg );
+
   /// @brief Checks whether the input PDG code represents
   /// an ion
   /// @details Note that antimatter ions will not be recognized

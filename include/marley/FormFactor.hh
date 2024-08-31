@@ -90,25 +90,25 @@ namespace marley {
       /// @param M Vector mass parameter
       inline double F2( double Q2, double M ) const;
 
-      /// @brief F3 form factor
+      /// @brief FS form factor
       /// @param Q2 The (minus) squared four-momentum transfer
       /// @param M Vector mass parameter
-      double F3( double Q2, double M ) const;
+      double FS( double Q2, double M ) const;
 
-      /// @brief GA form factor
+      /// @brief FA form factor
       /// @param Q2 The (minus) squared four-momentum transfer
       /// @param M Axial mass parameter
-      double GA( double Q2, double M ) const;
+      double FA( double Q2, double M ) const;
 
-      /// @brief GP form factor
+      /// @brief FP form factor
       /// @param Q2 The (minus) squared four-momentum transfer
       /// @param M Axial mass parameter
-      double GP( double Q2, double M ) const;
+      double FP( double Q2, double M ) const;
 
-      /// @brief G3 form factor
+      /// @brief FT form factor
       /// @param Q2 The (minus) squared four-momentum transfer
       /// @param M Axial mass parameter
-      double G3( double Q2, double M ) const;
+      double FT( double Q2, double M ) const;
 
     private:
 
@@ -129,7 +129,7 @@ namespace marley {
 
   inline double FormFactor::F1( double Q2, double M ) const
     { return ( F1_p( Q2, M ) - F1_n( Q2, M ) ); }
-  
+
   inline double FormFactor::F2( double Q2, double M ) const
     { return ( F2_p( Q2, M ) - F2_n( Q2, M ) ); }
 
