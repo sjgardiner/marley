@@ -604,6 +604,19 @@ double marley::AllowedNuclearReactionWithQ2::sample_cos_theta_c_cm(
   // For now the max is unknown, so the rejection sample will calculate it
   // "on the fly"
   double max = marley_utils::UNKNOWN_MAX;
+
+  // For the superallowed case, we know where it will be a priori
+  if ( superallowed_ ) {
+    if ( mat_el.type() == ME_Type::FERMI ) {
+      max = this->diff_xs( mat_el, KEa, 1., beta_c_cm, false );
+    }
+    else if ( mat_el.type() == ME_Type::GAMOW_TELLER ) {
+      max = this->diff_xs( mat_el, KEa, -1., beta_c_cm, false );
+    }
+    else throw marley::Error( "Unrecognized matrix element type encountered"
+      " in marley::AllowedNuclearReactionWithQ2::sample_cos_theta_c_cm()" );
+  }
+
   return gen.rejection_sample(
     [ &mat_el, KEa, &beta_c_cm, this ]( double cos_theta_cm ) -> double
     { return this->diff_xs( mat_el, KEa, cos_theta_cm, beta_c_cm, false ); },
