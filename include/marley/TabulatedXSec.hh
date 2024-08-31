@@ -87,14 +87,14 @@ namespace marley {
           inline double vT() const { return vT_; }
           inline double vTprime() const { return vTprime_; }
 
-          inline void set_vCC(double val) { vCC_ = val; }
-          inline void set_vLL(double val) { vLL_ = val; }
-          inline void set_vCL(double val) { vCL_ = val; }
-          inline void set_vT(double val) { vT_ = val; }
-          inline void set_vTprime(double val) { vTprime_ = val; }
+          inline void set_vCC( double val ) { vCC_ = val; }
+          inline void set_vLL( double val ) { vLL_ = val; }
+          inline void set_vCL( double val ) { vCL_ = val; }
+          inline void set_vT( double val ) { vT_ = val; }
+          inline void set_vTprime( double val ) { vTprime_ = val; }
 
           // Scalar product with the corresponding nuclear responses
-          inline double operator*(const ResponseTable::NuclearResponses& nr) {
+          inline double operator*( const NuclearResponses& nr ) {
             double product = 0.;
             product += this->vCC_ * nr.RCC();
             product += this->vLL_ * nr.RLL();

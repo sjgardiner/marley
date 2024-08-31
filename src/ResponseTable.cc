@@ -17,8 +17,8 @@
 #include "marley/Error.hh"
 #include "marley/ResponseTable.hh"
 
-marley::ResponseTable::NuclearResponses
-  marley::ResponseTable::interpolate(double w, double q) const
+marley::NuclearResponses marley::ResponseTable::interpolate( double w,
+  double q ) const
 {
   // Return a dummy value if the point lies outside the grid boundaries
   if ( w < this->w_min() || w > this->w_max()
@@ -26,7 +26,7 @@ marley::ResponseTable::NuclearResponses
   {
     throw marley::Error( "Outside of grid bounds in marley::ResponseTable::"
       "interpolate()" );
-    return marley::ResponseTable::NuclearResponses();
+    return marley::NuclearResponses();
   }
 
   // Find the indices of the grid points on either side of the desired w and

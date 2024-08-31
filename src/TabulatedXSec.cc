@@ -96,10 +96,10 @@ void marley::TabulatedXSec::add_table( const std::string& file_name )
   MultipoleLabel unnat_ml( J, unnatural );
 
   auto nat_resp = std::make_shared<
-    std::vector<marley::ResponseTable::NuclearResponses> >();
+    std::vector<marley::NuclearResponses> >();
 
   auto unnat_resp = std::make_shared<
-    std::vector<marley::ResponseTable::NuclearResponses> >();
+    std::vector<marley::NuclearResponses> >();
 
   // Temporary storage for responses
   double rcc, rll, rcl, rtVV, rtAA, rtprime;
