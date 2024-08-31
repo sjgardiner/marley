@@ -47,8 +47,9 @@
 5.18989  0.59              1
 5.681    0.21              1
 6.118    0.48              1
-# We only keep nuclear levels up to the unbound threshold
-# which is = 6.43847 MeV for 40K
+6.790    0.71              1
+# We only keep nuclear levels up to the proton knockout threshold which is
+# about 7.5 MeV for 40K
 #
 RADII
 # Nucleon (proton) wavefunction parameters
