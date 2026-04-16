@@ -15,7 +15,6 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 // Standard library includes
-#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -470,22 +469,6 @@ void marley::DecayScheme::read_from_stream( std::istream& in ) {
       l.add_gamma( energy, ri, levels_.at(level_f_idx).get() );
     }
   }
-
-  // Remove levels above the unbound threshold (these will always be
-  // handled using a continuous level density treatment)
-  const auto& mt = marley::MassTable::Instance();
-  double unbound_Ex = mt.unbound_threshold( Z_, A_ );
-
-  // TODO: replace with std::erase_if when updating to C++20
-  auto iter_new_end = std::remove_if( levels_.begin(), levels_.end(),
-    [ unbound_Ex ]( const std::unique_ptr< marley::Level >& lev ) -> bool {
-      double lvl_Ex = lev->energy();
-      bool unbound = ( lvl_Ex > unbound_Ex );
-      return unbound;
-    }
-  );
-  levels_.erase( iter_new_end, levels_.end() );
-
 }
 
 void marley::DecayScheme::parse( const std::string& filename,
@@ -508,7 +491,6 @@ void marley::DecayScheme::parse( const std::string& filename,
       throw marley::Error( "Unsupported file format passed to"
         " marley::DecayScheme constructor." );
   }
-
 }
 
 void marley::DecayScheme::parse_native( const std::string& filename ) {
