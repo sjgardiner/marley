@@ -17,6 +17,10 @@
 // MARLEY includes
 #include "marley/EventProcessor.hh"
 
+namespace HepMC3 {
+  class GenParticle;
+}
+
 namespace marley {
 
   /// @brief EventProcessor that handles nuclear de-excitations
@@ -30,6 +34,12 @@ namespace marley {
 
       virtual void process_event( HepMC3::GenEvent& event,
         marley::Generator& gen ) override;
+	
+      protected:
+
+      	void assign_residue_attributes( HepMC3::GenParticle& residue,
+        	marley::Generator& gen, double& Ex, int& twoJ, int& parity_int );
+
   };
 
 }

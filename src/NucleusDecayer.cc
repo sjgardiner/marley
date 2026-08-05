@@ -31,6 +31,7 @@
 #include "marley/MatrixElement.hh"
 #include "marley/NucleusDecayer.hh"
 #include "marley/Parity.hh"
+#include "marley/TargetAtom.hh"
 
 using ME_Type = marley::MatrixElement::TransitionType;
 
@@ -53,33 +54,79 @@ namespace {
 void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
   marley::Generator& gen )
 {
+
+  // The de-excitation code uses MeV-based natural units. In cases where
+  // NucleusDecayer is processing an event made with an external tool,
+  // a different energy unit (e.g., GeV) may be used. Account for this here
+  // by storing the old energy unit and switching to MARLEY's unit system.
+  // The old unit will be restored at the end of this function.
+  // TODO: also account for possible differences in the length unit
+  HepMC3::Units::MomentumUnit old_p4_unit = event.momentum_unit();
+  HepMC3::Units::LengthUnit length_unit = event.length_unit();
+  event.set_units( HepMC3::Units::MEV, length_unit );
+
+  // Check whether the input event was made natively in MARLEY or handed in from
+  // an external tool. Native events will have then name "MARLEY" in the list of
+  // tools that appear in the run information.
+  bool native_event = false;
+  auto run_info = event.run_info();
+  if ( run_info ) {
+    const auto& tools = run_info->tools();
+    for ( const auto& t : tools ) {
+      if ( t.name == "MARLEY" ) {
+        native_event = true;
+        break;
+      }
+    }
+  }
+
   auto undecayed_residues = marley_hepmc3::get_particles_with_status(
     marley_hepmc3::NUHEPMC_UNDECAYED_RESIDUE_STATUS, event );
 
   MARLEY_LOG( DEBUG, "physics.deexcitation" ) << "NucleusDecayer: processing "
     << undecayed_residues.size() << " undecayed residue(s)";
 
-  // Check the reaction process that created this event. The process types
-  // distinguish between discrete and continuum reactions, which is helpful
-  // below.
-  int proc_id = event.attribute< HepMC3::IntAttribute >(
-    "signal_process_id" )->value();
-  auto proc_type = marley_hepmc3::from_nuhepmc_proc_id( proc_id );
   bool is_continuum_channel = false;
-  if ( proc_type == marley::Reaction::ProcessType::NeutrinoCC_Continuum
-    || proc_type == marley::Reaction::ProcessType::AntiNeutrinoCC_Continuum 
-    || proc_type == marley::Reaction::ProcessType::NC_Continuum )
-  {
-    is_continuum_channel = true;
+
+  // Always treat the initial excitation energy as inside the continuum
+  // if the event was made by an external tool.
+  // TODO: revisit this treatment and consider doing something better
+  if ( !native_event ) is_continuum_channel = true;
+  else {
+    // Otherwise, check the reaction process that created this event. The
+    // process types distinguish between discrete and continuum reactions,
+    // which is helpful below.
+    int proc_id = event.attribute< HepMC3::IntAttribute >(
+      "signal_process_id" )->value();
+    auto proc_type = marley_hepmc3::from_nuhepmc_proc_id( proc_id );
+    if ( proc_type == marley::Reaction::ProcessType::NeutrinoCC_Continuum
+      || proc_type == marley::Reaction::ProcessType::AntiNeutrinoCC_Continuum
+      || proc_type == marley::Reaction::ProcessType::NC_Continuum )
+    {
+      is_continuum_channel = true;
+    }
+
   }
 
   for ( auto residue : undecayed_residues ) {
 
-    // Get the residue excitation energy from the event. These values represent
-    // its state immediately following the initial two-two scattering reaction.
-    double Ex = residue->attribute< HepMC3::DoubleAttribute >( "Ex" )->value();
-    int twoJ = residue->attribute< HepMC3::IntAttribute >( "twoJ" )->value();
-    int p_int = residue->attribute< HepMC3::IntAttribute >( "parity" )->value();
+     double Ex = 0.;
+    int twoJ = 0, p_int = 0;
+
+    // For externally-produced events, we need to determine the excitation energy,
+    // spin, and parity of the current nucleus before simulating de-excitations.
+    if ( !native_event ) {
+      this->assign_residue_attributes( *residue, gen, Ex, twoJ, p_int );
+    }
+    else {
+      // For native MARLEY events, the excitation energy, spin, and parity are
+      // stored as particle attributes on each nucleus of interest. Retrieve
+      // these directly rather than relying on the ad hoc calculation above.
+      Ex = residue->attribute< HepMC3::DoubleAttribute >( "Ex" )->value();
+      twoJ = residue->attribute< HepMC3::IntAttribute >( "twoJ" )->value();
+      p_int = residue->attribute< HepMC3::IntAttribute >( "parity" )->value();
+    }
+    
     marley::Parity P( p_int );
 
     // If the residue is in its ground state, then there's nothing for us to do.
@@ -310,5 +357,64 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
     }
 
   } // loop over undecayed residues
+
+
+  // We are done processing the event, so restore the old energy units that
+  // were used in the input
+  event.set_units( old_p4_unit, length_unit );
+}
+
+void marley::NucleusDecayer::assign_residue_attributes(
+  HepMC3::GenParticle& residue, marley::Generator& gen,
+  double& Ex, int& twoJ, int& parity_int )
+{
+  int pdg = residue.pid();
+  int A = marley_utils::get_particle_A( pdg );
+  if ( A < 2 ) throw marley::Error( "PDG code " + std::to_string(pdg)
+    + " encountered in marley::NucleusDecayer::assign_residue_attributes()" );
+  bool A_is_odd = ( A % 2 == 1 );
+
+  int qIon = marley_hepmc3::get_particle_charge( residue );
+
+  const auto& mt = marley::MassTable::Instance();
+  double gs_residue_mass = mt.get_atomic_mass( pdg )
+    - qIon*mt.get_particle_mass( marley_utils::ELECTRON );
+
+  marley::TargetAtom ta( pdg );
+
+  Ex = std::max( 0., residue.generated_mass() - gs_residue_mass );
+  MARLEY_LOG( DEBUG, "physics.deexcitation" ) << "residue " << ta
+    << " has generated mass = " << residue.generated_mass() << " MeV";
+  MARLEY_LOG( DEBUG, "physics.deexcitation" ) << "residue " << ta
+    << " has ground-state mass = " << gs_residue_mass << " MeV";
+  MARLEY_LOG( DEBUG, "physics.deexcitation" ) << "residue " << ta
+    << " has starting Ex = " << Ex << " MeV";
+
+  auto& sdb = gen.get_structure_db();
+  auto& ld = sdb.get_level_density_model( pdg );
+
+  int starting_twoJ = ( A_is_odd ? 1 : 0 );
+  int max_twoJ = starting_twoJ + 12;
+  std::vector< std::pair< int, marley::Parity > > spin_parities;
+  std::vector< double > weights;
+  for ( int loop_twoJ = starting_twoJ;
+    loop_twoJ <= max_twoJ; loop_twoJ += 2 )
+  {
+    for ( const bool p : { true, false } ) {
+      marley::Parity par( p );
+      // weight stays empty here as spin/parity is assigned manually rather than drawing from level density
+      double w = ld.level_density( Ex, loop_twoJ, par );
+      spin_parities.emplace_back( loop_twoJ, par );
+    }
+  }
+
+  std::discrete_distribution< size_t > sp_dist(
+    weights.begin(), weights.end() );
+  size_t sp_index = gen.sample_from_distribution( sp_dist );
+
+  const auto& sampled_pair = spin_parities.at( sp_index );
+
+  twoJ = sampled_pair.first;
+  parity_int = static_cast< int >( sampled_pair.second );
 
 }
