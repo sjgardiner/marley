@@ -110,11 +110,12 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
 
   for ( auto residue : undecayed_residues ) {
 
-     double Ex = 0.;
+    double Ex = 0.;
     int twoJ = 0, p_int = 0;
 
-    // For externally-produced events, we need to determine the excitation energy,
-    // spin, and parity of the current nucleus before simulating de-excitations.
+    // For externally-produced events, we need to determine the excitation
+    // energy, spin, and parity of the current nucleus before simulating
+    // de-excitations.
     if ( !native_event ) {
       this->assign_residue_attributes( *residue, gen, Ex, twoJ, p_int );
     }
@@ -126,7 +127,7 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
       twoJ = residue->attribute< HepMC3::IntAttribute >( "twoJ" )->value();
       p_int = residue->attribute< HepMC3::IntAttribute >( "parity" )->value();
     }
-    
+
     marley::Parity P( p_int );
 
     // If the residue is in its ground state, then there's nothing for us to do.
@@ -229,6 +230,28 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
 
         marley::HauserFeshbachDecay hfd( residue, Ex, twoJ, P, sdb );
         MARLEY_LOG( DEBUG, "physics.deexcitation.hauser" ) << hfd;
+
+        if ( !native_event ) {
+          // For continuum events supplied by an external code, we can run
+          // into situations where choosing an initial spin-parity from the
+          // level density leads to only a single J_i = 0 --> J_f = 0
+          // transition being available. For gamma-ray emission, this
+          // ExitChannel will have a width of zero because it is forbidden
+          // by angular momentum conservation (photons are spin-1). As a
+          // workaround for such cases, we recompute the decay width after
+          // reassigning the initial spin to J_i = 1.
+          if ( hfd.total_width() <= 0. && twoJ == 0
+            && hfd.exit_channels().size() < 2u )
+          {
+            // Clear and rebuild the vector of exit channels using the new
+            // value of the initial nuclear spin
+            hfd.reassign_twoJi( twoJ + 2, sdb );
+            MARLEY_LOG( DEBUG, "physics.deexcitation.hauser" ) << "Prevented"
+              << " J_i = 0 --> J_f = 0 gamma-ray transition by reassigning"
+              << " J_i = 1";
+            MARLEY_LOG( DEBUG, "physics.deexcitation.hauser" ) << hfd;
+          }
+        }
 
         int q_second;
         const auto& exit_channel = hfd.do_decay( Ex, twoJ, P, first, second,
@@ -402,7 +425,8 @@ void marley::NucleusDecayer::assign_residue_attributes(
   {
     for ( const bool p : { true, false } ) {
       marley::Parity par( p );
-      // weight stays empty here as spin/parity is assigned manually rather than drawing from level density
+      // weight stays empty here as spin/parity is assigned manually rather
+      // than drawing from level density
       double w = ld.level_density( Ex, loop_twoJ, par );
       spin_parities.emplace_back( loop_twoJ, par );
     }

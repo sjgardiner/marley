@@ -84,6 +84,14 @@ namespace marley {
 
       inline double total_width() const;
 
+      /// @brief Re-initializes after setting the initial nuclear spin to a new
+      /// value
+      /// @param twoJi New value for two times the initial nuclear spin @f$ J
+      /// @f$
+      /// @param sdb StructureDatabase to use when creating new ExitChannel
+      /// objects
+      void reassign_twoJi( const int twoJi, marley::StructureDatabase& sdb );
+
     private:
 
       /// @brief Helper function called by the constructor. Loads
@@ -95,7 +103,7 @@ namespace marley {
       /// decays
       const std::shared_ptr< HepMC3::GenParticle > compound_nucleus_;
       const double Exi_; ///< Initial nuclear excitation energy
-      const int twoJi_; ///< Two times the initial nuclear spin
+      int twoJi_; ///< Two times the initial nuclear spin
       const marley::Parity Pi_; ///< Two times the initial nuclear parity
 
       /// @brief Total decay width (MeV) for the compound nucleus

@@ -304,3 +304,13 @@ const std::unique_ptr< marley::ExitChannel >&
 
   return ec;
 }
+
+void marley::HauserFeshbachDecay::reassign_twoJi( const int twoJi,
+  marley::StructureDatabase& sdb )
+{
+  // Assign the new value of the initial nuclear spin
+  twoJi_ = twoJi;
+
+  // Clear and rebuild the vector of ExitChannel objects
+  this->build_exit_channels( sdb );
+}
